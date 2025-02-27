@@ -14,81 +14,51 @@ from webdriver_manager.chrome import ChromeDriverManager
 from fake_useragent import UserAgent
 from selenium.webdriver.common.action_chains import ActionChains
 from requests.exceptions import Timeout, RequestException
+from pydub import AudioSegment
+from pydub.playback import play
+from threading import Thread, Lock
 import time
 import re
 import pickle
 import pyautogui
 import random
 import requests
-from pydub import AudioSegment
-from pydub.playback import play
-from threading import Thread, Lock
-lock = Lock()
+import json
 
-# 直播链接
-live_url = "https://live.douyin.com/91625969198"
+with open('data.json', 'r', encoding='utf-8') as file:
+    # 使用json.load()方法将文件内容解析为Python对象(通常是dict或者list)
+    data = json.load(file)
+
 # live_url = "https://live.douyin.com/540517338200"
-comment_box_class = "webcast-chatroom___textarea"
-list_person = []
-
-# 循环时间间隔s
-t = 0.5
-# 欢迎新人的频率s
-hello_new_person_frequency = 30
-# 自动发送带节奏评论的时间间隔
-auto_send_frequency = 120
-like_frequency = 30
-welcome_frequency = 30
-like_start_time = 0
-welcome_start_time = 0
-auto_send_start_time = 0
-hello_new_person_start_time = 0
-# 特殊字符
-chars = [".", "。", "!", "！", "、", "`", "·", "～", "~", "_", "__", ";", "；"]
-# 上次的姓名
+live_url = data['live_url']
+comment_box_class = data['comment_box_class']
+t = data['t']
+hello_new_person_frequency = data['hello_new_person_frequency']
+auto_send_frequency = data['auto_send_frequency']
+like_frequency = data['like_frequency']
+welcome_frequency = data['welcome_frequency']
+like_start_time = data['like_start_time']
+welcome_start_time = data['welcome_start_time']
+auto_send_start_time = data['auto_send_start_time']
+hello_new_person_start_time = data['hello_new_person_start_time']
+chars = data['chars']
+ua_user = data['ua_user']
+auto_reply_list = data['auto_reply_list']
+auto_send_list = data['auto_send_list']
+auto_send_list1 = data['auto_send_list1']
+like_audio_list = data['like_audio_list']
+welcome_audio_list = data['welcome_audio_list']
+cookiePklPath = data['cookiePklPath']
+user_data_dir = data['user_data_dir']
+profile_directory = data['profile_directory']
+# flag params
 last_time_name = ""
-# 评论列表
 comment_list = []
+list_person = []
 last_comment = ""
-# 自动回复列表 第一项为匹配关键词，后面的为回复内容
-auto_reply_list = [
-    [
-        "3",
-        "这款儿童奶瓶刷轻量便携：出行无忧，随时随地都能使用",
-        "硅胶刷毛：柔软设计，清洁无死角",
-        "多功能配件：包含多种刷具，全面清洁",
-        "快速开合：1秒轻松开启，高效清洗",
-        "小巧收纳：小巧设计，轻松存放出门",
-    ],
-    [
-        "2",
-        "这款儿童马桶坐便器能为您的小宝贝带来舒适与安全的如厕体验",
-        "专为幼儿设计，这款坐便器拥有恰到好处的高度和尺寸，确保您的孩子能够轻松、独立地使用",
-        "采用环保材料制成，表面光滑易于清洁，同时配备防滑底部，保障孩子在使用过程中的稳定性与安全性",
-        "简洁而不失可爱的外观设计，可以轻松融入您家的卫生间环境",
-    ],
-    [
-        "1",
-        "这款儿童凉拖鞋卡通可爱：立体卡通鞋面，萌趣十足",
-        "而且有防滑设计：强抓地力，行走稳健",
-        "设计轻盈舒适：环保EVA材质，贴合脚型",
-        "后跟带设计：轻松切换，便捷活动",
-        "适合夏季：专为儿童设计，清凉舒适",
-    ],
-    ["退换货有保障吗", "都是支持7天无理由退货的宝子们"],
-]
-auto_send_list = [
-    "儿童助眠直播间，这里有数不清的童话故事",
-    "家里有孩子正好要休息的可以在直播间听一听童话故事！",
-    "如果需要儿童故事电子资料，下方小车，任意下.单，四信息即可德到",
-]
-auto_send_list1 = [
-    "直播间的朋友们需要介绍凉拖鞋的扣：1",
-    "直播间的朋友们需要介绍儿童马桶的扣：2",
-    "直播间的朋友们需要介绍奶瓶刷的扣：3",
-]
 is_typing = False
 is_audio_playing = False
+lock = Lock()
 
 # 主函数
 
@@ -103,7 +73,7 @@ def main_douyin():
 
 # 操作
 def operating(driver):
-    global hello_new_person_start_time, auto_send_start_time,like_start_time,welcome_start_time
+    global hello_new_person_start_time, auto_send_start_time, like_start_time, welcome_start_time
     time.sleep(2)
     driver.get(live_url)
     # pyautogui.press("p")
@@ -217,7 +187,7 @@ def thread_function_playing_audio(path):
 
 
 def get_new_notice(driver):
-    global last_time_name, is_audio_playing, like_start_time, like_frequency
+    global last_time_name, is_audio_playing, like_start_time, like_frequency, like_audio_list
     element = driver.find_element(
         By.CLASS_NAME, "webcast-chatroom___bottom-message")
     element_text = element.text
@@ -227,8 +197,7 @@ def get_new_notice(driver):
         # 感谢点赞音频
         now_time = int(time.time())
         if now_time - like_start_time > like_frequency:
-            audio = random.choice(['./audio/非常感谢刚刚为我点赞的朋友们，你们的支持就是我最大的动力！.wav',
-                                   './audio/每一次点赞都是对我的巨大鼓励，谢谢大家！.wav'])
+            audio = random.choice(like_audio_list)
             x = Thread(target=thread_function_playing_audio, args=(audio,))
             thread_function_playing_audio(audio)
             x.start()
@@ -246,7 +215,7 @@ def get_new_notice(driver):
 
 # 欢迎新人
 def hello_new_person(driver):
-    global hello_new_person_start_time, welcome_start_time, welcome_frequency
+    global hello_new_person_start_time, welcome_start_time, welcome_frequency, welcome_audio_list
     now_time = int(time.time())
     if now_time - hello_new_person_start_time >= hello_new_person_frequency:
         if len(list_person) > 0:
@@ -254,8 +223,7 @@ def hello_new_person(driver):
             # 欢迎音频
             now_time = int(time.time())
             if now_time - welcome_start_time > welcome_frequency:
-                audio = random.choice(
-                    ['./audio/欢迎新来的小伙伴们，点个关注不迷路哦！.wav', './audio/欢迎各位小伙伴们的到来.wav'])
+                audio = random.choice(welcome_audio_list)
                 x = Thread(target=thread_function_playing_audio, args=(audio,))
                 x.start()
             text = (
@@ -341,21 +309,21 @@ his.forEach(item =>{let [title, url]=item.split('。');document.title=title;hist
 
 
 # 保存 Cookie
-def save_cookies(driver, filename="./douyin_cookies.pkl"):
+def save_cookies(driver, filename=cookiePklPath):
     input("请手动登录后按回车键继续...")
     with open(filename, "wb") as file:
         pickle.dump(driver.get_cookies(), file)
     print(f"Cookie 已保存到 {filename}")
 
 
-def update_cookies(driver, filename="./douyin_cookies.pkl"):
+def update_cookies(driver, filename=cookiePklPath):
     with open(filename, "wb") as file:
         pickle.dump(driver.get_cookies(), file)
     print(f"Cookie 已更新 {filename}")
 
 
 # 加载Cookie
-def load_cookies(driver, filename="./douyin_cookies.pkl"):
+def load_cookies(driver, filename=cookiePklPath):
     cookies = pickle.load(open(filename, "rb"))
     for cookie in cookies:
         driver.add_cookie(cookie)
@@ -365,11 +333,12 @@ def load_cookies(driver, filename="./douyin_cookies.pkl"):
 
 # 配置浏览器
 def set_options(chrome_options):
+    global ua_user,user_data_dir,profile_directory
     ua = UserAgent()
-    s = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
+    s = ua_user
     # 指定 Chrome 用户配置文件路径
-    user_data_dir = "C:/Users/Administrator/AppData/Local/Microsoft/Edge"
-    profile_directory = "C:/Users/Administrator/AppData/Local/Microsoft/Edge"  # 替换为你的配置文件目录
+    user_data_dir = user_data_dir
+    profile_directory = profile_directory  # 替换为你的配置文件目录
     chrome_options = webdriver.ChromeOptions()
     # chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     # chrome_options.add_argument(f"--profile-directory={profile_directory}")

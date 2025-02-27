@@ -1,0 +1,79 @@
+{
+    "t": 0.5,
+    "hello_new_person_frequency": 30,
+    "auto_send_frequency": 120,
+    "like_frequency": 30,
+    "welcome_frequency": 30,
+    "like_start_time": 0,
+    "welcome_start_time": 0,
+    "auto_send_start_time": 0,
+    "hello_new_person_start_time": 0,
+    "live_url": "https://live.douyin.com/986480916344",
+    "cookiePklPath": "./douyin_cookies.pkl",
+    "ua_user": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+    "comment_box_class": "webcast-chatroom___textarea",
+    "user_data_dir": "C:/Users/Administrator/AppData/Local/Microsoft/Edge",
+    "profile_directory": "C:/Users/Administrator/AppData/Local/Microsoft/Edge",
+    "like_audio_list": [
+        "./audio/非常感谢刚刚为我点赞的朋友们，你们的支持就是我最大的动力！.wav",
+        "./audio/每一次点赞都是对我的巨大鼓励，谢谢大家！.wav"
+    ],
+    "welcome_audio_list": [
+        "./audio/欢迎新来的小伙伴们，点个关注不迷路哦！.wav",
+        "./audio/欢迎各位小伙伴们的到来.wav"
+    ],
+    "chars": [
+        ".",
+        "。",
+        "!",
+        "！",
+        "、",
+        "`",
+        "·",
+        "～",
+        "~",
+        "_",
+        "__",
+        ";",
+        "；"
+    ],
+    "auto_reply_list": [
+        [
+            "3",
+            "这款儿童奶瓶刷轻量便携：出行无忧，随时随地都能使用",
+            "硅胶刷毛：柔软设计，清洁无死角",
+            "多功能配件：包含多种刷具，全面清洁",
+            "快速开合：1秒轻松开启，高效清洗",
+            "小巧收纳：小巧设计，轻松存放出门"
+        ],
+        [
+            "2",
+            "这款儿童马桶坐便器能为您的小宝贝带来舒适与安全的如厕体验",
+            "专为幼儿设计，这款坐便器拥有恰到好处的高度和尺寸，确保您的孩子能够轻松、独立地使用",
+            "采用环保材料制成，表面光滑易于清洁，同时配备防滑底部，保障孩子在使用过程中的稳定性与安全性",
+            "简洁而不失可爱的外观设计，可以轻松融入您家的卫生间环境"
+        ],
+        [
+            "1",
+            "这款儿童凉拖鞋卡通可爱：立体卡通鞋面，萌趣十足",
+            "而且有防滑设计：强抓地力，行走稳健",
+            "设计轻盈舒适：环保EVA材质，贴合脚型",
+            "后跟带设计：轻松切换，便捷活动",
+            "适合夏季：专为儿童设计，清凉舒适"
+        ],
+        [
+            "退换货有保障吗",
+            "都是支持7天无理由退货的宝子们"
+        ]
+    ],
+    "auto_send_list": [
+        "儿童助眠直播间，这里有数不清的童话故事",
+        "家里有孩子正好要休息的可以在直播间听一听童话故事！",
+        "如果需要儿童故事电子资料，下方小车，任意下.单，四信息即可德到"
+    ],
+    "auto_send_list1": [
+        "直播间的朋友们需要介绍凉拖鞋的扣：1",
+        "直播间的朋友们需要介绍儿童马桶的扣：2",
+        "直播间的朋友们需要介绍奶瓶刷的扣：3"
+    ]
+}
