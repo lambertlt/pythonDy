@@ -1,0 +1,414 @@
+"""
+Version: 1.0
+Autor: Lambert_work@163.com
+Date: 2025-02-25 10:21:12
+LastEditors: lambertlt lambert_Y_Y@163.com
+LastEditTime: 2025-02-25 10:21:25
+"""
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+from fake_useragent import UserAgent
+from selenium.webdriver.common.action_chains import ActionChains
+from requests.exceptions import Timeout, RequestException
+import time
+import re
+import pickle
+import pyautogui
+import random
+import requests
+from pydub import AudioSegment
+from pydub.playback import play
+from threading import Thread, Lock
+lock = Lock()
+
+# 直播链接
+live_url = "https://live.douyin.com/91625969198"
+# live_url = "https://live.douyin.com/540517338200"
+comment_box_class = "webcast-chatroom___textarea"
+list_person = []
+
+# 循环时间间隔s
+t = 0.5
+# 欢迎新人的频率s
+hello_new_person_frequency = 30
+# 自动发送带节奏评论的时间间隔
+auto_send_frequency = 120
+like_frequency = 30
+welcome_frequency = 30
+like_start_time = 0
+welcome_start_time = 0
+auto_send_start_time = 0
+hello_new_person_start_time = 0
+# 特殊字符
+chars = [".", "。", "!", "！", "、", "`", "·", "～", "~", "_", "__", ";", "；"]
+# 上次的姓名
+last_time_name = ""
+# 评论列表
+comment_list = []
+last_comment = ""
+# 自动回复列表 第一项为匹配关键词，后面的为回复内容
+auto_reply_list = [
+    [
+        "3",
+        "这款儿童奶瓶刷轻量便携：出行无忧，随时随地都能使用",
+        "硅胶刷毛：柔软设计，清洁无死角",
+        "多功能配件：包含多种刷具，全面清洁",
+        "快速开合：1秒轻松开启，高效清洗",
+        "小巧收纳：小巧设计，轻松存放出门",
+    ],
+    [
+        "2",
+        "这款儿童马桶坐便器能为您的小宝贝带来舒适与安全的如厕体验",
+        "专为幼儿设计，这款坐便器拥有恰到好处的高度和尺寸，确保您的孩子能够轻松、独立地使用",
+        "采用环保材料制成，表面光滑易于清洁，同时配备防滑底部，保障孩子在使用过程中的稳定性与安全性",
+        "简洁而不失可爱的外观设计，可以轻松融入您家的卫生间环境",
+    ],
+    [
+        "1",
+        "这款儿童凉拖鞋卡通可爱：立体卡通鞋面，萌趣十足",
+        "而且有防滑设计：强抓地力，行走稳健",
+        "设计轻盈舒适：环保EVA材质，贴合脚型",
+        "后跟带设计：轻松切换，便捷活动",
+        "适合夏季：专为儿童设计，清凉舒适",
+    ],
+    ["退换货有保障吗", "都是支持7天无理由退货的宝子们"],
+]
+auto_send_list = [
+    "儿童助眠直播间，这里有数不清的童话故事",
+    "家里有孩子正好要休息的可以在直播间听一听童话故事！",
+    "如果需要儿童故事电子资料，下方小车，任意下.单，四信息即可德到",
+]
+auto_send_list1 = [
+    "直播间的朋友们需要介绍凉拖鞋的扣：1",
+    "直播间的朋友们需要介绍儿童马桶的扣：2",
+    "直播间的朋友们需要介绍奶瓶刷的扣：3",
+]
+is_typing = False
+is_audio_playing = False
+
+# 主函数
+
+
+def main_douyin():
+    driver = douyin_login()
+    input("登陆成功后，点击回车键继续")
+    update_cookies(driver)
+    operating(driver)
+    driver.quit()
+
+
+# 操作
+def operating(driver):
+    global hello_new_person_start_time, auto_send_start_time,like_start_time,welcome_start_time
+    time.sleep(2)
+    driver.get(live_url)
+    # pyautogui.press("p")
+    input("点击回车键开始助播程序")
+    send_comment(driver, "直播助手进入直播间...")
+    hello_new_person_start_time = int(time.time())
+    auto_send_start_time = int(time.time())
+    like_start_time = int(time.time())
+    welcome_start_time = int(time.time())
+
+    while True:
+        get_new_notice(driver)
+        hello_new_person(driver)
+        get_new_comment(driver)
+        auto_send_comment(driver)
+        time.sleep(t)
+
+
+# 自动发送带节奏评论
+def auto_send_comment(driver):
+    global auto_send_start_time, auto_send_frequency
+    now_time = int(time.time())
+    if now_time - auto_send_start_time > auto_send_frequency:
+        if is_typing == True:
+            while True:
+                time.sleep(0.5)
+                if is_typing == False:
+                    break
+        for i in auto_send_list:
+            send_comment(driver, i)
+        auto_send_start_time = int(time.time())
+
+
+# 获取新评论
+def get_new_comment(driver):
+    global last_comment, comment_list
+    element_list = driver.find_elements(
+        By.CLASS_NAME, "webcast-chatroom___content-with-emoji-text"
+    )
+    if (
+        len(element_list) > 0
+        and element_list[len(element_list) - 1].text != last_comment
+        and is_in_second_values(element_list[len(element_list) - 1].text)
+    ):
+        comment = element_list[len(element_list) - 1].text
+        comment_list.append(comment)
+        last_comment = comment
+        print("新评论：", comment)
+        handle_comment(driver)
+
+
+# 判断s是否在字典的value中，存在返回false
+def is_in_second_values(s):
+    global auto_reply_list
+    for item in auto_reply_list:
+        for i in range(1, len(item)):
+            if item[i] == s:
+                return False
+    for n in auto_send_list:
+        if n == s:
+            return False
+    return True
+
+
+# 处理评论
+def handle_comment(driver):
+    global comment_list, is_typing
+    if len(comment_list) > 0:
+        for item in comment_list:
+            index = 0
+            for p in auto_reply_list:
+                pattern = re.compile(re.escape(p[0]))
+                matched_strings = pattern.findall(item)
+                if len(matched_strings) > 0:
+                    print("匹配结果：", matched_strings)
+                    if is_typing == True:
+                        time.sleep(1)
+                    n = len(auto_reply_list[index])
+                    for i in range(1, n):
+                        if is_typing == True:
+                            while True:
+                                time.sleep(0.5)
+                                if is_typing == False:
+                                    break
+                        send_comment(driver, auto_reply_list[index][i])
+                    try:
+                        comment_list.remove(item)
+                    except:
+                        pass
+                index += 1
+        comment_list.clear()
+
+# 定义线程要运行的函数
+
+
+def thread_function_playing_audio(path):
+    global is_audio_playing
+    if is_audio_playing == False:
+        print(f"多线程播放 {path} 路径音频")
+        with lock:
+            is_audio_playing = True
+        audio = AudioSegment.from_wav(path)
+        play(audio)
+        with lock:
+            is_audio_playing = False
+        print(f"多线程播放 {path} 路径音频 结束")
+    else:
+        print(f'由于音频被占用该 {path} 路径音频未播放')
+
+# 获取新信息
+
+
+def get_new_notice(driver):
+    global last_time_name, is_audio_playing, like_start_time, like_frequency
+    element = driver.find_element(
+        By.CLASS_NAME, "webcast-chatroom___bottom-message")
+    element_text = element.text
+    if last_time_name == element_text:
+        return
+    elif len(element_text.split("：")) > 1 and element_text.split("：")[1] == "为主播点赞了":
+        # 感谢点赞音频
+        now_time = int(time.time())
+        if now_time - like_start_time > like_frequency:
+            audio = random.choice(['./audio/非常感谢刚刚为我点赞的朋友们，你们的支持就是我最大的动力！.wav',
+                                   './audio/每一次点赞都是对我的巨大鼓励，谢谢大家！.wav'])
+            x = Thread(target=thread_function_playing_audio, args=(audio,))
+            thread_function_playing_audio(audio)
+            x.start()
+        return
+    elif len(element_text.split(" ")) > 1 and element_text.split(" ")[1] == "来了":
+        print(element_text)
+        name = filter_special_chars(element_text.split(" ")[0])
+        if len(list_person) > 5:
+            temp = list_person[len(list_person) - 1]
+            list_person.clear()
+            list_person.append(temp)
+        list_person.append(name)
+        last_time_name = element_text
+
+
+# 欢迎新人
+def hello_new_person(driver):
+    global hello_new_person_start_time, welcome_start_time, welcome_frequency
+    now_time = int(time.time())
+    if now_time - hello_new_person_start_time >= hello_new_person_frequency:
+        if len(list_person) > 0:
+            random.shuffle(chars)
+            # 欢迎音频
+            now_time = int(time.time())
+            if now_time - welcome_start_time > welcome_frequency:
+                audio = random.choice(
+                    ['./audio/欢迎新来的小伙伴们，点个关注不迷路哦！.wav', './audio/欢迎各位小伙伴们的到来.wav'])
+                x = Thread(target=thread_function_playing_audio, args=(audio,))
+                x.start()
+            text = (
+                "欢迎："
+                + '"'
+                + list_person[0]
+                + ' " 进入直播间!'
+                + random.choice(chars)
+            )
+            if is_typing == True:
+                while True:
+                    time.sleep(0.5)
+                    if is_typing == False:
+                        break
+            send_comment(driver, text)
+            print(text)
+            list_person.pop(0)
+            hello_new_person_start_time = int(time.time())
+
+
+#  发送评论内容
+def send_comment(driver, comment):
+    global is_typing
+    is_typing = True
+    element = driver.find_element(By.CLASS_NAME, comment_box_class)
+    click_element(driver, element)
+    type_character(element, comment)
+    pyautogui.press("enter")
+    is_typing = False
+
+
+# 点击元素
+def click_element(driver, element):
+    action = ActionChains(driver)
+    action.move_to_element(element).click().perform()
+    time.sleep(1)
+
+
+# 打字输入
+def type_character(element, text):
+    for char in text:
+        wait_time = random.uniform(0.09, 0.3)
+        element.send_keys(char)
+        time.sleep(wait_time)
+
+
+# 过滤掉字符串中的特殊字符和表情符号，只保留汉字、英文字母、数字和常见标点符号
+def filter_special_chars(text):
+    # 正则表达式模式，匹配汉字、英文字母、数字和常见标点符号
+    pattern = r"[^\w\u4e00-\u9fff\s\.\,\!\?\;\:\-$$]"
+    # \w 匹配字母数字下划线，\u4e00-\u9fff 匹配汉字，其他为常见标点符号
+    if text == "":
+        return ""
+    # 使用 sub 函数替换掉所有不匹配该模式的字符为空格
+    result = re.sub(pattern, "", text)
+    # 移除多余的空格，使输出更加整洁
+    result = re.sub(r"\s+", " ", result).strip()
+    if result == "":
+        return "表情用户"
+    return result
+
+
+# 打开抖音进行登陆
+def douyin_login():
+    chrome_options = Options()
+    set_options(chrome_options)
+    # service = Service(ChromeDriverManager().install())
+    service = Service(executable_path="./chromedriver-win64/chromedriver.exe")
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.set_window_size(1483, 1080)
+    driver.get("https://www.baidu.com/")
+    script = """var his = ['百度。https://www.baidu.com/','百度搜索hello。https://www.baidu.com/s?ie=UTF-&wd=hello','百度搜索抖音。https://www.baidu.com/s?ie=UTF-8&wd=抖音'];
+his.forEach(item =>{let [title, url]=item.split('。');document.title=title;history.pushState({}, '', url);});"""
+    driver.execute_script(script)
+    time.sleep(1)
+    driver.get("https://www.douyin.com/")
+    script = """var his = ['抖音。https://www.douyin.com/?recommend=1','抖音记录美好生活。https://www.douyin.com/follow','我的抖音。https://www.douyin.com/user/self?from_tab_name=main&showTab=like'];
+his.forEach(item =>{let [title, url]=item.split('。');document.title=title;history.pushState({}, '', url);});"""
+    driver.execute_script(script)
+    load_cookies(driver)
+    pyautogui.press("down")
+    return driver
+
+
+# 保存 Cookie
+def save_cookies(driver, filename="./douyin_cookies.pkl"):
+    input("请手动登录后按回车键继续...")
+    with open(filename, "wb") as file:
+        pickle.dump(driver.get_cookies(), file)
+    print(f"Cookie 已保存到 {filename}")
+
+
+def update_cookies(driver, filename="./douyin_cookies.pkl"):
+    with open(filename, "wb") as file:
+        pickle.dump(driver.get_cookies(), file)
+    print(f"Cookie 已更新 {filename}")
+
+
+# 加载Cookie
+def load_cookies(driver, filename="./douyin_cookies.pkl"):
+    cookies = pickle.load(open(filename, "rb"))
+    for cookie in cookies:
+        driver.add_cookie(cookie)
+    driver.refresh()
+    time.sleep(2)
+
+
+# 配置浏览器
+def set_options(chrome_options):
+    ua = UserAgent()
+    s = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
+    # 指定 Chrome 用户配置文件路径
+    user_data_dir = "C:/Users/Administrator/AppData/Local/Microsoft/Edge"
+    profile_directory = "C:/Users/Administrator/AppData/Local/Microsoft/Edge"  # 替换为你的配置文件目录
+    chrome_options = webdriver.ChromeOptions()
+    # chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
+    # chrome_options.add_argument(f"--profile-directory={profile_directory}")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument(f"user-agent={s}")
+    chrome_options.add_argument(
+        "--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option(
+        "excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option("useAutomationExtension", False)
+    chrome_options.add_argument("--disable-extensions")
+    # 设置浏览器指纹
+    chrome_options.add_argument("--disable-infobars")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--remote-debugging-port=9222")
+
+
+# 获取数据
+def fetch_data(url):
+    try:
+        # 发送 GET 请求，并设置超时时间为 5 秒
+        response = requests.get(url, timeout=5)
+
+        # 检查响应状态码
+        if response.status_code == 200:
+            # 将响应内容解析为 JSON 格式
+            data = response.json()
+            return data
+        else:
+            print(f"请求失败，状态码: {response.status_code}")
+            return None
+    except Timeout:
+        print("请求超时")
+        return None
+    except RequestException as e:
+        print(f"请求发生错误: {e}")
+        return None
+
+
+# 运行主函数
+main_douyin()
