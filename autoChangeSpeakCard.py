@@ -30,8 +30,8 @@ def main_douyin():
     global data
     driver = juliangbaiying_login()
     time.sleep(3)
-    driver.refresh()
-    input('页面加载成功，enter')
+    # driver.refresh()
+    input("页面加载成功，enter")
     operating(driver)
     driver.quit()
 
@@ -42,17 +42,18 @@ def operating(driver):
     good_index = 0
     while True:
         time.sleep(random.uniform(10, 13))
-        if good_index < len(data['goods']):
+        if good_index < len(data["goods"]):
             good_index += 1
         else:
             good_index = 0
         request = f"""
-        fetch('https://buyin.jinritemai.com/api/anchor/livepc/setcurrent?', {{
+        fetch('
+https://buyin.jinritemai.com/api/anchor/livepc/setcurrent?verifyFp=verify_m7oqxwxt_4inpOvzz_WcOZ_4UeK_BZ2d_eV4YznJCKriy&fp=verify_m7oqxwxt_4inpOvzz_WcOZ_4UeK_BZ2d_eV4YznJCKriy&msToken=Ai-L7KysDnATFt-AWGcqyTAHKpRWcTEoArmCWKGOXWMNRsSKT6xNge7eSRPDokTf_YmoF0XTi7C6pqJPFsroZvQ_ux6EN_qYelgyf_XrJk4xY6pSQZ9gay52GXm5LRucoQeEmX8Wn1OfaBhpngCbSVUPtEu9WUfbE4SGSqD9hA84reJM9xELd0c%3D&a_bogus=E6UjDHy7YZRjO3lS8CDheAIUAI9MNsWj-BiKSHnP9FYpG7zGjdpZEwPobqOJpbbazSB-w1QHoEldGEDbQdsdMqIkqmpfSutjFzAcIhsLgqqfTz7DLHShCwuzLwBKlchLa%2FcXEIs5IssEgEclnrATlBpaC5TLmmmpWHFjdZScj9RTDALP83aSOMwANfwKmY2RRD%3D%3D', {{
             method: 'POST',
             headers: {{
                 'Content-Type': 'application/x-www-form-urlencoded',
             }},
-            body: 'promotion_id={data['goods'][good_index]}&cancel=false',
+            body: 'promotion_id={data['goods'][good_index]['promotion_id']}&cancel=false',
             credentials: 'include', 
             }})
             .then(response => response.json())
@@ -61,17 +62,19 @@ def operating(driver):
                 console.error('Error:', error);
         }});
         """
+        print(request)
         try:
             driver.execute_script(request)
         except Exception as e:
             print(f"发生了一个非预期的异常: {e}")
+
 
 def juliangbaiying_login():
     global data
     chrome_options = Options()
     set_options(chrome_options)
     # service = Service(ChromeDriverManager().install())
-    service = Service(executable_path=data['executable_path'])
+    service = Service(executable_path=data["executable_path"])
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.set_window_size(1483, 1080)
     driver.get(data["url-juliangbaiying-login"])
@@ -79,10 +82,11 @@ def juliangbaiying_login():
     driver.execute_script("window.open();")
     time.sleep(1)
     driver.switch_to.window(driver.window_handles[-1])
-    driver.get(data['url-juliangbaiying-control'])
+    driver.get(data["url-juliangbaiying-control"])
     time.sleep(2)
-    driver.refresh()
+    # driver.refresh()
     return driver
+
 
 # 配置浏览器
 
@@ -94,10 +98,8 @@ def set_options(chrome_options):
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument(f"user-agent={s}")
-    chrome_options.add_argument(
-        "--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option(
-        "excludeSwitches", ["enable-automation"])
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option("useAutomationExtension", False)
     chrome_options.add_argument("--disable-extensions")
     # 设置浏览器指纹
