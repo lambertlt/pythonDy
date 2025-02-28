@@ -58,10 +58,11 @@ def operating(driver):
     # pyautogui.press("p")
     input("点击回车键开始助播程序")
     send_comment(driver, "直播助手进入直播间...")
-    data['hello_new_person_start_time'] = int(time.time())
-    data['auto_send_start_time'] = int(time.time())
-    data['like_start_time'] = int(time.time())
+    data['like_play_audio_start_time'] = int(time.time())
+    data['welcome_play_audio_start_time'] = int(time.time())
     data['welcome_start_time'] = int(time.time())
+    data['auto_send_start_time'] = int(time.time())
+    data['hello_new_person_start_time'] = int(time.time())
 
     while True:
         get_new_notice(driver)
@@ -178,7 +179,7 @@ def get_new_notice(driver):
     elif len(element_text.split("：")) > 1 and element_text.split("：")[1] == "为主播点赞了":
         # 感谢点赞音频
         now_time = int(time.time())
-        if now_time - data['like_start_time'] > data['like_play_audio_frequency']:
+        if now_time - data['like_play_audio_start_time'] > data['like_play_audio_frequency']:
             audio = random.choice(data['like_audio_list'])
             x = Thread(target=thread_function_playing_audio, args=(audio,))
             thread_function_playing_audio(audio)
@@ -204,26 +205,28 @@ def hello_new_person(driver):
             random.shuffle(data['chars'])
             # 欢迎音频
             now_time = int(time.time())
-            if now_time - data['welcome_start_time'] > data['welcome_frequency']:
+            if now_time - data['welcome_play_audio_start_time'] > data['welcome_play_audio_frequency']:
                 audio = random.choice(data['welcome_audio_list'])
                 x = Thread(target=thread_function_playing_audio, args=(audio,))
                 x.start()
-            text = (
-                "欢迎："
-                + '"'
-                + list_person[0]
-                + ' " 进入直播间!'
-                + random.choice(data['chars'])
-            )
-            if is_typing == True:
-                while True:
-                    time.sleep(0.5)
-                    if is_typing == False:
-                        break
-            send_comment(driver, text)
-            print(text)
-            list_person.pop(0)
-            data['hello_new_person_start_time'] = int(time.time())
+                data['welcome_play_audio_start_time'] = int(time.time())
+            if now_time - data['welcome_start_time'] > data['welcome_frequency']:             
+                text = (
+                    "欢迎："
+                    + '"'
+                    + list_person[0]
+                    + ' " 进入直播间!'
+                    + random.choice(data['chars'])
+                )
+                if is_typing == True:
+                    while True:
+                        time.sleep(0.5)
+                        if is_typing == False:
+                            break
+                send_comment(driver, text)
+                print(text)
+                list_person.pop(0)
+                data['hello_new_person_start_time'] = int(time.time())
 
 
 #  发送评论内容
@@ -254,8 +257,10 @@ def type_character(element, text):
             time.sleep(wait_time)
     elif data['type_character_feign'] == "False":
         element.send_keys(text)
-        
-# 过滤掉字符串中的特殊字符和表情符号，只保留汉字、英文字母、数字和常见标点符号
+
+        # 过滤掉字符串中的特殊字符和表情符号，只保留汉字、英文字母、数字和常见标点符号
+
+
 def filter_special_chars(text):
     # 正则表达式模式，匹配汉字、英文字母、数字和常见标点符号
     pattern = r"[^\w\u4e00-\u9fff\s\.\,\!\?\;\:\-$$]"

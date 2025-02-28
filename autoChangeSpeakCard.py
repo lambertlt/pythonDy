@@ -38,7 +38,7 @@ def operating(driver):
     global data, t
     good_index = 0
     while True:
-        time.sleep(random.uniform(10, 16))
+        time.sleep(random.uniform(10, 13))
         if good_index < len(data['goods']):
             good_index += 1
         else:
