@@ -29,6 +29,9 @@ with open("data.json", "r", encoding="utf-8") as file:
 def main_douyin():
     global data
     driver = juliangbaiying_login()
+    time.sleep(3)
+    driver.refresh()
+    input('页面加载成功，enter')
     operating(driver)
     driver.quit()
 
@@ -58,8 +61,10 @@ def operating(driver):
                 console.error('Error:', error);
         }});
         """
-        driver.execute_script(request)
-
+        try:
+            driver.execute_script(request)
+        except Exception as e:
+            print(f"发生了一个非预期的异常: {e}")
 
 def juliangbaiying_login():
     global data
