@@ -55,9 +55,9 @@ def operating(driver):
     global data
     time.sleep(2)
     driver.get(data['live_url'])
-    # pyautogui.press("p")
+    pyautogui.press("p")
     input("点击回车键开始助播程序")
-    send_comment(driver, "直播助手进入直播间...")
+    # send_comment(driver, "直播助手进入直播间...")
     data['like_play_audio_start_time'] = int(time.time())
     data['welcome_play_audio_start_time'] = int(time.time())
     data['welcome_start_time'] = int(time.time())
