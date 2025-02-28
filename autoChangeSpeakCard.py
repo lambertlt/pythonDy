@@ -19,8 +19,7 @@ import json
 
 t = 0.5
 
-with open("goods.json", "r", encoding="utf-8") as file:
-    # 使用json.load()方法将文件内容解析为Python对象(通常是dict或者list)
+with open("data.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 
 
@@ -28,9 +27,8 @@ with open("goods.json", "r", encoding="utf-8") as file:
 
 
 def main_douyin():
+    global data
     driver = juliangbaiying_login()
-    input("登陆成功后，点击回车键继续")
-    # update_cookies(driver)
     operating(driver)
     driver.quit()
 
@@ -38,10 +36,29 @@ def main_douyin():
 # 操作
 def operating(driver):
     global data, t
-
+    good_index = 0
     while True:
-
-        time.sleep(10)
+        time.sleep(random.uniform(10, 16))
+        if good_index < len(data['goods']):
+            good_index += 1
+        else:
+            good_index = 0
+        request = f"""
+        fetch('https://buyin.jinritemai.com/api/anchor/livepc/setcurrent?', {{
+            method: 'POST',
+            headers: {{
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }},
+            body: 'promotion_id={data['goods'][good_index]}&cancel=false',
+            credentials: 'include', 
+            }})
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch((error) => {{
+                console.error('Error:', error);
+        }});
+        """
+        driver.execute_script(request)
 
 
 def juliangbaiying_login():
@@ -49,56 +66,33 @@ def juliangbaiying_login():
     chrome_options = Options()
     set_options(chrome_options)
     # service = Service(ChromeDriverManager().install())
-    service = Service(executable_path="./chromedriver-mac-arm64/chromedriver")
+    service = Service(executable_path="./chromedriver-win64/chromedriver.exe")
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.set_window_size(1483, 1080)
-    driver.get(data["url-juliangbaiying-logo"])
-    # script = """"""
-    # driver.execute_script(script)
-    # save_cookies(driver, data["cookiePklPath"])
-    # load_cookies(driver, data["cookiePklPath"])
-    # pyautogui.press("down")
-    return driver
-
-
-# 保存 Cookie
-def save_cookies(driver, filename):
-    input("请手动登录后按回车键继续...")
-    with open(filename, "wb") as file:
-        pickle.dump(driver.get_cookies(), file)
-    print(f"Cookie 已保存到 {filename}")
-
-
-def update_cookies(driver, filename):
-    with open(filename, "wb") as file:
-        pickle.dump(driver.get_cookies(), file)
-    print(f"Cookie 已更新 {filename}")
-
-
-# 加载Cookie
-def load_cookies(driver, filename):
-    cookies = pickle.load(open(filename, "rb"))
-    for cookie in cookies:
-        driver.add_cookie(cookie)
+    driver.get(data["url-juliangbaiying-login"])
+    input("登陆成功后，点击回车键继续")
+    driver.execute_script("window.open();")
+    time.sleep(1)
+    driver.switch_to.window(driver.window_handles[-1])
+    driver.get(data['url-juliangbaiying-control'])
     time.sleep(2)
     driver.refresh()
-
+    return driver
 
 # 配置浏览器
+
+
 def set_options(chrome_options):
     global data
     ua = UserAgent()
     s = data["ua_user"]
-    # 指定 Chrome 用户配置文件路径
-    # user_data_dir = data["user_data_dir"]
-    # profile_directory = data["profile_directory"]  # 替换为你的配置文件目录
     chrome_options = webdriver.ChromeOptions()
-    # chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-    # chrome_options.add_argument(f"--profile-directory={profile_directory}")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument(f"user-agent={s}")
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_argument(
+        "--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option(
+        "excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option("useAutomationExtension", False)
     chrome_options.add_argument("--disable-extensions")
     # 设置浏览器指纹
