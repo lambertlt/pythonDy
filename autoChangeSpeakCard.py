@@ -71,7 +71,7 @@ def juliangbaiying_login():
     chrome_options = Options()
     set_options(chrome_options)
     # service = Service(ChromeDriverManager().install())
-    service = Service(executable_path="./chromedriver-win64/chromedriver.exe")
+    service = Service(executable_path=data['executable_path'])
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.set_window_size(1483, 1080)
     driver.get(data["url-juliangbaiying-login"])
