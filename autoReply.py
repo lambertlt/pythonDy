@@ -28,7 +28,7 @@ import random
 import requests
 import json
 
-with open('data.json', 'r', encoding='utf-8') as file:
+with open("data.json", "r", encoding="utf-8") as file:
     # 使用json.load()方法将文件内容解析为Python对象(通常是dict或者list)
     data = json.load(file)
 
@@ -42,13 +42,16 @@ is_typing = False
 is_audio_playing = False
 lock = Lock()
 app = Flask(__name__)
-CORS(app, resources={
-    r"/*": {
-        "origins": "*",  # 允许所有来源
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 允许的HTTP方法
-        "allow_headers": ["Content-Type", "Authorization"]  # 允许的自定义头
-    }
-})
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": "*",  # 允许所有来源
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 允许的HTTP方法
+            "allow_headers": ["Content-Type", "Authorization"],  # 允许的自定义头
+        }
+    },
+)
 
 # 主函数
 
@@ -57,7 +60,7 @@ def main_douyin():
     web_thread = Thread(target=thread_function_web_run, args=())
     web_thread.start()
     driver = douyin_login()
-    # input("登陆成功后，点击回车键继续")
+    input("登陆成功后，点击回车键继续")
     update_cookies(driver)
     operating(driver)
     driver.quit()
@@ -67,31 +70,31 @@ def main_douyin():
 def operating(driver):
     global data
     time.sleep(2)
-    driver.get(data['live_url'])
+    driver.get(data["live_url"])
     pyautogui.press("p")
     input("点击回车键开始助播程序")
     # send_comment(driver, "直播助手进入直播间...")
-    data['like_play_audio_start_time'] = int(time.time())
-    data['welcome_play_audio_start_time'] = int(time.time())
-    data['welcome_start_time'] = int(time.time())
-    data['auto_send_start_time'] = int(time.time())
-    data['hello_new_person_start_time'] = int(time.time())
+    data["like_play_audio_start_time"] = int(time.time())
+    data["welcome_play_audio_start_time"] = int(time.time())
+    data["welcome_start_time"] = int(time.time())
+    data["auto_send_start_time"] = int(time.time())
+    data["hello_new_person_start_time"] = int(time.time())
     while True:
         get_new_notice(driver)
         hello_new_person(driver)
         get_new_comment(driver)
         auto_send_comment(driver)
-        time.sleep(data['t'])
+        time.sleep(data["t"])
 
 
 def thread_function_web_run():
-    @app.route('/params/all', methods=['GET'])
+    @app.route("/params/all", methods=["GET"])
     def get_param():
         with lock:
             # page = request.args.get('name', default=1, type=str)
             return jsonify(data)
 
-    @app.route('/set_param', methods=['POST'])
+    @app.route("/set_param", methods=["POST"])
     def set_param():
         if request.is_json and len(request.json) > 0:
             json_data = request.get_json()
@@ -103,21 +106,18 @@ def thread_function_web_run():
         else:
             return jsonify({"message": "请求格式不正确", "status": "error"}), 400
 
-    if __name__ == '__main__':
+    if __name__ == "__main__":
         # 运行Flask应用
         app.run(port=5000)
 
-    @app.route('/search/<param1>/<param2>/<param3>')
+    @app.route("/search/<param1>/<param2>/<param3>")
     @cross_origin()
     def search(param1, param2, param3):
         # 构建要返回的数据
-        data = {
-            'param1': param1,
-            'param2': param2,
-            'param3': param3
-        }
+        data = {"param1": param1, "param2": param2, "param3": param3}
         # 使用jsonify返回JSON格式的数据
         return jsonify(data)
+
 
 # 自动发送带节奏评论
 
@@ -125,18 +125,22 @@ def thread_function_web_run():
 def auto_send_comment(driver):
     global data
     now_time = int(time.time())
-    if now_time - data['auto_send_start_time'] > data['auto_send_frequency']:
+    if now_time - data["auto_send_start_time"] > data["auto_send_frequency"]:
+        random.shuffle(data["chars"])
         if is_typing == True:
             while True:
                 time.sleep(0.5)
                 if is_typing == False:
                     break
-        if data['auto_send_list_once'] == "True":
-            for i in data['auto_send_onece_list']:
-                send_comment(driver, i)
-        elif data['auto_send_list_once'] == "False":
-            send_comment(driver, random.choice(data['auto_send_list']))
-        data['auto_send_start_time'] = int(time.time())
+        if data["auto_send_list_once"] == "True":
+            for i in data["auto_send_onece_list"]:
+                send_comment(driver, i + random.choice(data["chars"]))
+        elif data["auto_send_list_once"] == "False":
+            send_comment(
+                driver,
+                random.choice(data["auto_send_list"]) + random.choice(data["chars"]),
+            )
+        data["auto_send_start_time"] = int(time.time())
 
 
 # 获取新评论
@@ -160,11 +164,11 @@ def get_new_comment(driver):
 # 判断s是否在字典的value中，存在返回false
 def is_in_second_values(s):
     global data
-    for item in data['auto_reply_list']:
+    for item in data["auto_reply_list"]:
         for i in range(1, len(item)):
             if item[i] == s:
                 return False
-    for n in data['auto_send_list']:
+    for n in data["auto_send_list"]:
         if n == s:
             return False
     return True
@@ -176,27 +180,28 @@ def handle_comment(driver):
     if len(comment_list) > 0:
         for item in comment_list:
             index = 0
-            for p in data['auto_reply_list']:
+            for p in data["auto_reply_list"]:
                 pattern = re.compile(re.escape(p[0]))
                 matched_strings = pattern.findall(item)
                 if len(matched_strings) > 0:
                     print("匹配结果：", matched_strings)
                     if is_typing == True:
                         time.sleep(1)
-                    n = len(data['auto_reply_list'][index])
+                    n = len(data["auto_reply_list"][index])
                     for i in range(1, n):
                         if is_typing == True:
                             while True:
                                 time.sleep(0.5)
                                 if is_typing == False:
                                     break
-                        send_comment(driver, data['auto_reply_list'][index][i])
+                        send_comment(driver, data["auto_reply_list"][index][i])
                     try:
                         comment_list.remove(item)
                     except:
                         pass
                 index += 1
         comment_list.clear()
+
 
 # 定义线程要运行的函数
 
@@ -213,23 +218,29 @@ def thread_function_playing_audio(path):
             is_audio_playing = False
         print(f"多线程播放 {path} 路径音频 结束")
     else:
-        print(f'由于音频被占用该 {path} 路径音频未播放')
+        print(f"由于音频被占用该 {path} 路径音频未播放")
+
 
 # 获取新信息
 
 
 def get_new_notice(driver):
     global data, last_time_name, is_audio_playing
-    element = driver.find_element(
-        By.CLASS_NAME, "webcast-chatroom___bottom-message")
+    element = driver.find_element(By.CLASS_NAME, "webcast-chatroom___bottom-message")
     element_text = element.text
     if last_time_name == element_text:
         return
-    elif len(element_text.split("：")) > 1 and element_text.split("：")[1] == "为主播点赞了":
+    elif (
+        len(element_text.split("：")) > 1
+        and element_text.split("：")[1] == "为主播点赞了"
+    ):
         # 感谢点赞音频
         now_time = int(time.time())
-        if now_time - data['like_play_audio_start_time'] > data['like_play_audio_frequency']:
-            audio = random.choice(data['like_audio_list'])
+        if (
+            now_time - data["like_play_audio_start_time"]
+            > data["like_play_audio_frequency"]
+        ):
+            audio = random.choice(data["like_audio_list"])
             x = Thread(target=thread_function_playing_audio, args=(audio,))
             x.start()
         return
@@ -248,23 +259,29 @@ def get_new_notice(driver):
 def hello_new_person(driver):
     global data
     now_time = int(time.time())
-    if now_time - data['hello_new_person_start_time'] >= data['hello_new_person_frequency']:
+    if (
+        now_time - data["hello_new_person_start_time"]
+        >= data["hello_new_person_frequency"]
+    ):
         if len(list_person) > 0:
-            random.shuffle(data['chars'])
+            random.shuffle(data["chars"])
             # 欢迎音频
             now_time = int(time.time())
-            if now_time - data['welcome_play_audio_start_time'] > data['welcome_play_audio_frequency']:
-                audio = random.choice(data['welcome_audio_list'])
+            if (
+                now_time - data["welcome_play_audio_start_time"]
+                > data["welcome_play_audio_frequency"]
+            ):
+                audio = random.choice(data["welcome_audio_list"])
                 x = Thread(target=thread_function_playing_audio, args=(audio,))
                 x.start()
-                data['welcome_play_audio_start_time'] = int(time.time())
-            if now_time - data['welcome_start_time'] > data['welcome_frequency']:
+                data["welcome_play_audio_start_time"] = int(time.time())
+            if now_time - data["welcome_start_time"] > data["welcome_frequency"]:
                 text = (
                     "欢迎："
                     + '"'
                     + list_person[0]
                     + ' " 进入直播间!'
-                    + random.choice(data['chars'])
+                    + random.choice(data["chars"])
                 )
                 if is_typing == True:
                     while True:
@@ -274,14 +291,14 @@ def hello_new_person(driver):
                 send_comment(driver, text)
                 print(text)
                 list_person.pop(0)
-                data['hello_new_person_start_time'] = int(time.time())
+                data["hello_new_person_start_time"] = int(time.time())
 
 
 #  发送评论内容
 def send_comment(driver, comment):
     global is_typing, data
     is_typing = True
-    element = driver.find_element(By.CLASS_NAME, data['comment_box_class'])
+    element = driver.find_element(By.CLASS_NAME, data["comment_box_class"])
     click_element(driver, element)
     type_character(element, comment)
     pyautogui.press("enter")
@@ -298,13 +315,15 @@ def click_element(driver, element):
 # 打字输入
 def type_character(element, text):
     global data
-    if data['type_character_feign'] == "True":
+    if data["type_character_feign"] == "True":
         for char in text:
             wait_time = random.uniform(
-                data['type_character_feign_time_start'], data['type_character_feign_time_end'])
+                data["type_character_feign_time_start"],
+                data["type_character_feign_time_end"],
+            )
             element.send_keys(char)
             time.sleep(wait_time)
-    elif data['type_character_feign'] == "False":
+    elif data["type_character_feign"] == "False":
         element.send_keys(text)
 
         # 过滤掉字符串中的特殊字符和表情符号，只保留汉字、英文字母、数字和常见标点符号
@@ -331,7 +350,7 @@ def douyin_login():
     chrome_options = Options()
     set_options(chrome_options)
     # service = Service(ChromeDriverManager().install())
-    service = Service(executable_path=data['executable_path'])
+    service = Service(executable_path=data["executable_path"])
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.set_window_size(1483, 1080)
     driver.get("https://www.baidu.com/")
@@ -349,21 +368,21 @@ his.forEach(item =>{let [title, url]=item.split('。');document.title=title;hist
 
 
 # 保存 Cookie
-def save_cookies(driver, filename=data['cookiePklPath']):
+def save_cookies(driver, filename=data["cookiePklPath"]):
     input("请手动登录后按回车键继续...")
     with open(filename, "wb") as file:
         pickle.dump(driver.get_cookies(), file)
     print(f"Cookie 已保存到 {filename}")
 
 
-def update_cookies(driver, filename=data['cookiePklPath']):
+def update_cookies(driver, filename=data["cookiePklPath"]):
     with open(filename, "wb") as file:
         pickle.dump(driver.get_cookies(), file)
     print(f"Cookie 已更新 {filename}")
 
 
 # 加载Cookie
-def load_cookies(driver, filename=data['cookiePklPath']):
+def load_cookies(driver, filename=data["cookiePklPath"]):
     cookies = pickle.load(open(filename, "rb"))
     for cookie in cookies:
         driver.add_cookie(cookie)
@@ -375,19 +394,17 @@ def load_cookies(driver, filename=data['cookiePklPath']):
 def set_options(chrome_options):
     global data
     ua = UserAgent()
-    s = data['ua_user']
+    s = data["ua_user"]
     # 指定 Chrome 用户配置文件路径
-    user_data_dir = data['user_data_dir']
-    profile_directory = data['profile_directory']  # 替换为你的配置文件目录
+    user_data_dir = data["user_data_dir"]
+    profile_directory = data["profile_directory"]  # 替换为你的配置文件目录
     chrome_options = webdriver.ChromeOptions()
     # chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
     # chrome_options.add_argument(f"--profile-directory={profile_directory}")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument(f"user-agent={s}")
-    chrome_options.add_argument(
-        "--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option(
-        "excludeSwitches", ["enable-automation"])
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option("useAutomationExtension", False)
     chrome_options.add_argument("--disable-extensions")
     # 设置浏览器指纹
