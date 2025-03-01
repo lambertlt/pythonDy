@@ -17,6 +17,9 @@ from requests.exceptions import Timeout, RequestException
 from pydub import AudioSegment
 from pydub.playback import play
 from threading import Thread, Lock
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from flask_cors import cross_origin
 import time
 import re
 import pickle
@@ -38,13 +41,23 @@ last_comment = ""
 is_typing = False
 is_audio_playing = False
 lock = Lock()
+app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": "*",  # 允许所有来源
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 允许的HTTP方法
+        "allow_headers": ["Content-Type", "Authorization"]  # 允许的自定义头
+    }
+})
 
 # 主函数
 
 
 def main_douyin():
+    web_thread = Thread(target=thread_function_web_run, args=())
+    web_thread.start()
     driver = douyin_login()
-    input("登陆成功后，点击回车键继续")
+    # input("登陆成功后，点击回车键继续")
     update_cookies(driver)
     operating(driver)
     driver.quit()
@@ -63,7 +76,6 @@ def operating(driver):
     data['welcome_start_time'] = int(time.time())
     data['auto_send_start_time'] = int(time.time())
     data['hello_new_person_start_time'] = int(time.time())
-
     while True:
         get_new_notice(driver)
         hello_new_person(driver)
@@ -72,7 +84,44 @@ def operating(driver):
         time.sleep(data['t'])
 
 
+def thread_function_web_run():
+    @app.route('/params/all', methods=['GET'])
+    def get_param():
+        with lock:
+            # page = request.args.get('name', default=1, type=str)
+            return jsonify(data)
+
+    @app.route('/set_param', methods=['POST'])
+    def set_param():
+        if request.is_json and len(request.json) > 0:
+            json_data = request.get_json()
+            with lock:
+                for k, v in json_data.items():
+                    print(k, v)
+                    data[k] = v
+            return jsonify({"message": "参数更新成功", "data": json_data}), 200
+        else:
+            return jsonify({"message": "请求格式不正确", "status": "error"}), 400
+
+    if __name__ == '__main__':
+        # 运行Flask应用
+        app.run(port=5000)
+
+    @app.route('/search/<param1>/<param2>/<param3>')
+    @cross_origin()
+    def search(param1, param2, param3):
+        # 构建要返回的数据
+        data = {
+            'param1': param1,
+            'param2': param2,
+            'param3': param3
+        }
+        # 使用jsonify返回JSON格式的数据
+        return jsonify(data)
+
 # 自动发送带节奏评论
+
+
 def auto_send_comment(driver):
     global data
     now_time = int(time.time())
@@ -182,7 +231,6 @@ def get_new_notice(driver):
         if now_time - data['like_play_audio_start_time'] > data['like_play_audio_frequency']:
             audio = random.choice(data['like_audio_list'])
             x = Thread(target=thread_function_playing_audio, args=(audio,))
-            thread_function_playing_audio(audio)
             x.start()
         return
     elif len(element_text.split(" ")) > 1 and element_text.split(" ")[1] == "来了":
@@ -210,7 +258,7 @@ def hello_new_person(driver):
                 x = Thread(target=thread_function_playing_audio, args=(audio,))
                 x.start()
                 data['welcome_play_audio_start_time'] = int(time.time())
-            if now_time - data['welcome_start_time'] > data['welcome_frequency']:             
+            if now_time - data['welcome_start_time'] > data['welcome_frequency']:
                 text = (
                     "欢迎："
                     + '"'
@@ -252,7 +300,8 @@ def type_character(element, text):
     global data
     if data['type_character_feign'] == "True":
         for char in text:
-            wait_time = random.uniform(0.09, 0.3)
+            wait_time = random.uniform(
+                data['type_character_feign_time_start'], data['type_character_feign_time_end'])
             element.send_keys(char)
             time.sleep(wait_time)
     elif data['type_character_feign'] == "False":
