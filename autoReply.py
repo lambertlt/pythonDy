@@ -43,14 +43,7 @@ is_audio_playing = False
 lock = Lock()
 app = Flask(__name__)
 CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": "*",  # 允许所有来源
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 允许的HTTP方法
-            "allow_headers": ["Content-Type", "Authorization"],  # 允许的自定义头
-        }
-    },
+    app
 )
 
 # 主函数
@@ -243,6 +236,7 @@ def get_new_notice(driver):
             audio = random.choice(data["like_audio_list"])
             x = Thread(target=thread_function_playing_audio, args=(audio,))
             x.start()
+            data["like_play_audio_start_time"] = int(time.time())
         return
     elif len(element_text.split(" ")) > 1 and element_text.split(" ")[1] == "来了":
         print(element_text)
@@ -292,6 +286,8 @@ def hello_new_person(driver):
                 print(text)
                 list_person.pop(0)
                 data["hello_new_person_start_time"] = int(time.time())
+                data["welcome_start_time"] = int(time.time())
+
 
 
 #  发送评论内容
