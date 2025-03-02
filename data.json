@@ -1,10 +1,10 @@
 {
   "t": 0.5,
   "hello_new_person_frequency": 30,
-  "auto_send_frequency": 120,
-  "welcome_frequency": 60,
+  "auto_send_frequency": 500,
+  "welcome_frequency": 300,
   "like_play_audio_start_time": 0,
-  "like_play_audio_frequency": 45,
+  "like_play_audio_frequency": 60,
   "welcome_play_audio_frequency": 30,
   "welcome_play_audio_start_time": 0,
   "welcome_start_time": 0,
@@ -16,11 +16,13 @@
   "live_url": "https://live.douyin.com/313452133924",
   "cookiePklPath": "./douyin_cookies.pkl",
   "ua_user": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+  "ua_user_mac": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
   "comment_box_class": "webcast-chatroom___textarea",
   "user_data_dir": "C:/Users/Administrator/AppData/Local/Microsoft/Edge",
   "profile_directory": "C:/Users/Administrator/AppData/Local/Microsoft/Edge",
-  "executable_path": "./chromedriver-win64/chromedriver.exe",
-  "auto_send_list_once": "False",
+  "executable_path": "./chromedriver-mac-arm64/chromedriver",
+  "executable_path_mac": "./chromedriver-mac-arm64/chromedriver",
+  "auto_send_list_once": "True",
   "like_audio_list": [
     "./audio/非常感谢刚刚为我点赞的朋友们，你们的支持就是我最大的动力！.wav",
     "./audio/每一次点赞都是对我的巨大鼓励，谢谢大家！.wav"
@@ -29,6 +31,7 @@
     "./audio/欢迎新来的小伙伴们，点个关注不迷路哦！.wav",
     "./audio/欢迎各位小伙伴们的到来.wav"
   ],
+  "ai_audio_url_login":"https://noiz.ai/login?redirect=%252Ftts%252Fcreation",
   "chars": [
     ".",
     "。",
@@ -52,12 +55,18 @@
     "小黄车价格已开，喜欢直接拍下",
     "实体门店发货，品质有保障，售后无忧",
     "奶瓶、尿不湿、尿布都有",
-    "库存告急鍤╳，拍完不补"
+    "库存告急鍤╳，拍完不补",
+    "所有品都包邮+运险险，所以直播间的朋友们放心拍",
   ],
   "auto_send_onece_list": [
-    "直播间的朋友们需要介绍凉拖鞋的扣：1",
-    "直播间的朋友们需要介绍儿童马桶的扣：2",
-    "直播间的朋友们需要介绍奶瓶刷的扣：3"
+    "呆满3分钟，逛完不买算我输",
+    "现货现发，能拍的都能发哦！",
+    "溜娃神器 学步车 快点进去看看",
+    "小黄车价格已开，喜欢直接拍下",
+    "实体门店发货，品质有保障，售后无忧",
+    "奶瓶、尿不湿、尿布都有",
+    "库存告急鍤╳，拍完不补",
+    "所有品都包邮+运险险，所以直播间的朋友们放心拍",
   ],
   "url-juliangbaiying-login": "https://buyin.jinritemai.com/mpa/account/login?log_out=1&type=24",
   "url-juliangbaiying-control": "https://buyin.jinritemai.com/dashboard/live/control?btm_ppre=a0.b0.c0.d0&btm_pre=a10091.b089178.c809509.d0&btm_show_id=cee40ead-5cab-483b-b59f-8aa32fd30510&pre_universal_page_params_id=&universal_page_params_id=7a1a6357-8e47-4320-8860-ad9cbc6473f2",
