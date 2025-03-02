@@ -15,12 +15,12 @@
   "type_character_feign_time_end": 0.6,
   "live_url": "https://live.douyin.com/313452133924",
   "cookiePklPath": "./douyin_cookies.pkl",
-  "ua_user": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+  "ua_user": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0",
   "ua_user_mac": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
   "comment_box_class": "webcast-chatroom___textarea",
   "user_data_dir": "C:/Users/Administrator/AppData/Local/Microsoft/Edge",
   "profile_directory": "C:/Users/Administrator/AppData/Local/Microsoft/Edge",
-  "executable_path": "./chromedriver-mac-arm64/chromedriver",
+  "executable_path": "./chromedriver-win64/chromedriver.exe",
   "executable_path_mac": "./chromedriver-mac-arm64/chromedriver",
   "auto_send_list_once": "True",
   "like_audio_list": [
@@ -56,7 +56,7 @@
     "实体门店发货，品质有保障，售后无忧",
     "奶瓶、尿不湿、尿布都有",
     "库存告急鍤╳，拍完不补",
-    "所有品都包邮+运险险，所以直播间的朋友们放心拍",
+    "所有品都包邮+运险险，所以直播间的朋友们放心拍"
   ],
   "auto_send_onece_list": [
     "呆满3分钟，逛完不买算我输",
@@ -66,7 +66,7 @@
     "实体门店发货，品质有保障，售后无忧",
     "奶瓶、尿不湿、尿布都有",
     "库存告急鍤╳，拍完不补",
-    "所有品都包邮+运险险，所以直播间的朋友们放心拍",
+    "所有品都包邮+运险险，所以直播间的朋友们放心拍"
   ],
   "url-juliangbaiying-login": "https://buyin.jinritemai.com/mpa/account/login?log_out=1&type=24",
   "url-juliangbaiying-control": "https://buyin.jinritemai.com/dashboard/live/control?btm_ppre=a0.b0.c0.d0&btm_pre=a10091.b089178.c809509.d0&btm_show_id=cee40ead-5cab-483b-b59f-8aa32fd30510&pre_universal_page_params_id=&universal_page_params_id=7a1a6357-8e47-4320-8860-ad9cbc6473f2",
