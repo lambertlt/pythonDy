@@ -93,10 +93,9 @@ def operating(driver_handler, driver_speaker):
                 }});
             """
             try:
-                audio = AudioSegment.from_file("./audio/ding.wav")
-                play(audio)
                 driver_speaker.execute_script(request)
                 print("播放场控语音脚本运行结束")
+                time.sleep(4)
             except Exception as e:
                 print(f"播放场控语音发生了一个非预期的异常: {e}")
 
@@ -139,6 +138,9 @@ def operating(driver_handler, driver_speaker):
         """
         try:
             driver_speaker.execute_script(request)
+            audio = AudioSegment.from_file("./audio/ding.mp3")
+            audio = audio - 15
+            play(audio)
             print("播放语音脚本运行结束")
         except Exception as e:
             print(f"发生了一个非预期的异常: {e}")
