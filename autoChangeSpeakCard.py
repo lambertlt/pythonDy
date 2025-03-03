@@ -58,7 +58,7 @@ def operating(driver_handler, driver_speaker):
             request = f"""
                 return new Promise((resolve, reject) => {{
                     const formData = new FormData();
-                    formData.append('text','{random.choice(data['live_interval_audio_list'])});'
+                    formData.append('text','{random.choice(data['live_interval_audio_list'])}') 
                     formData.append('voice_id','1c2c0a287')
                     formData.append('quality_preset','0')
                     formData.append('output_format','wav')
@@ -98,7 +98,7 @@ def operating(driver_handler, driver_speaker):
                 driver_speaker.execute_script(request)
                 print("播放场控语音脚本运行结束")
             except Exception as e:
-                print(f"发生了一个非预期的异常: {e}")
+                print(f"播放场控语音发生了一个非预期的异常: {e}")
 
         request = f"""
             return new Promise((resolve, reject) => {{
