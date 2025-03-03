@@ -17,20 +17,23 @@ import random
 import requests
 import json
 
+# flag
 t = 0.5
+audo_send_index = 0
+is_next = False
 
 with open("data.json", "r", encoding="utf-8") as file:
     data = json.load(file)
+
 
 # 主函数
 
 
 def main_douyin():
     global data
-    driver_speaker = noiz_login()
     driver_handler = juliangbaiying_login()
+    driver_speaker = noiz_login()
     time.sleep(3)
-    # driver.refresh()
     input("页面加载成功，enter")
     operating(driver_handler, driver_speaker)
     driver_handler.quit()
@@ -39,17 +42,23 @@ def main_douyin():
 
 # 操作
 def operating(driver_handler, driver_speaker):
-    global data, t
+    global data, t, is_next
     good_index = 0
+    promotion_slogans_index = 0
+    data['auto_send_start_time'] = int(time.time())
+
     while True:
-        time.sleep(13)
-        if good_index >= len(data["goods"]):
-            good_index = 0
+        auto_send_comment(driver_handler)
+        random_float = random.uniform(0, 1)
+        if random_float > 0.5:
+            sentence = data['promotion_slogans'][promotion_slogans_index]
         else:
+            sentence = ''
+        if random_float > 0.3:
             request = f"""
                 return new Promise((resolve, reject) => {{
                     const formData = new FormData();
-                    formData.append('text','{data['goods'][good_index]['title']},现在仅需{data['goods'][good_index]['price_desc']['min_price']['integer']}.{data['goods'][good_index]['price_desc']['min_price']['decimal']}') 
+                    formData.append('text','{random.choice(data['live_interval_audio_list'])});'
                     formData.append('voice_id','1c2c0a287')
                     formData.append('quality_preset','0')
                     formData.append('output_format','wav')
@@ -64,57 +73,168 @@ def operating(driver_handler, driver_speaker):
                             throw new Error('Network response was not ok');
                         }}
                         if (response.headers.get('content-type') === 'audio/wav') {{
-                                return response.blob(); // 将响应体转换为 Blob
+                            resolve('异步操作已完成');
+                            return response.blob(); // 将响应体转换为 Blob
                         }}
                         return response.json(); // 或者response.text()，根据实际情况
                     }})
                     .then(blob => {{
                             const audioUrl = URL.createObjectURL(blob); // 创建一个对象URL
                             const audio = new Audio(audioUrl); // 创建一个Audio对象
-                            
+                            audio.id = 'audio_id';
                             // 播放结束时清除对象URL
                             audio.addEventListener('ended', () => {{
                                 URL.revokeObjectURL(audioUrl);
-                                resolve('异步操作已完成');
                             }});
-
+                            document.body.appendChild(audio);
                             audio.play(); // 播放音频
                         }})
                     .catch(error => console.error('There was a problem with the fetch operation:', error));
                 }});
             """
             try:
+                audio = AudioSegment.from_file("./audio/ding.wav")
+                play(audio)
                 driver_speaker.execute_script(request)
-                time.sleep(0.5)
-                print("播放语音脚本运行结束")
+                print("播放场控语音脚本运行结束")
             except Exception as e:
                 print(f"发生了一个非预期的异常: {e}")
-            request = f"""
-            fetch('https://buyin.jinritemai.com/api/anchor/livepc/setcurrent?verifyFp=verify_m7q9579r_8gWGFJ0Q_bGZY_40ce_89y9_j24sL6TY5vxY&fp=verify_m7q9579r_8gWGFJ0Q_bGZY_40ce_89y9_j24sL6TY5vxY&msToken=pGykbqYbixZLHF3UKkIuON9LS7ao4-C0Xl2DeUgIfuotRHwgYoVduC1cjQkUS5ZB0td9QhxVzeCFpHqytyCylLdEO6xgxj2DHNkk55r9sYaAmjsNI_TfkP5qDFXDoVTq2-8ovGpumg3Zd_9GW7Nv16cTuLB9xuswCXzN7RXv2ge0tsNkJzCnRQ%3D%3D&a_bogus=mjURg7yJOqm5P3CSuCBFyfVlIUx%2FNTWy7lToSyNTCqPGGHebudpqgb2CnKLLsskj%2FRM3iIIH8EYeYfxcK2pChFrkLmhDuK06Y0IAV8sLhqq6GFG8DrRTCw0N9JGY0c4EOQKRJ1XXltQO2D5ULr-kUdAyeATJsQkpPHafDdWGxoFf6047PNFduPtdYXzx-QoRJD%3D%3D', {{
-                method: 'POST',
-                headers: {{
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }},
-                body: 'promotion_id={data['goods'][good_index]['promotion_id']}&cancel=false',
-                credentials: 'include', 
+
+        request = f"""
+            return new Promise((resolve, reject) => {{
+                const formData = new FormData();
+                formData.append('text','{random.choice(["接下来这款","下一款"])}发卡：{data['goods'][good_index]['title']},现在活动价,仅需{data['goods'][good_index]['price_desc']['min_price']['integer']}.{data['goods'][good_index]['price_desc']['min_price']['decimal']}元，在小黄车{good_index+1}号链接 {random.choice(["赶快冲它","大家可以点开看看","真的很合适",""])}！{sentence}') 
+                formData.append('voice_id','1c2c0a287')
+                formData.append('quality_preset','0')
+                formData.append('output_format','wav')
+                formData.append('target_lang','')
+                formData.append('speed','1')
+                fetch('https://noiz.ai/api/v1/text-to-speech-long?language=zh', {{
+                    method: 'POST',
+                    body: formData, // 直接将FormData对象作为请求体
                 }})
-                .then(response => response.json())
-                .then(data => console.log(data))
-                .catch((error) => {{
-                    console.error('Error:', error);
+                .then(response => {{
+                    if (!response.ok) {{
+                        throw new Error('Network response was not ok');
+                    }}
+                    if (response.headers.get('content-type') === 'audio/wav') {{
+                        resolve('异步操作已完成');
+                        return response.blob(); // 将响应体转换为 Blob
+                    }}
+                    return response.json(); // 或者response.text()，根据实际情况
+                }})
+                .then(blob => {{
+                        const audioUrl = URL.createObjectURL(blob); // 创建一个对象URL
+                        const audio = new Audio(audioUrl); // 创建一个Audio对象
+                        audio.id = 'audio_id';
+                        // 播放结束时清除对象URL
+                        audio.addEventListener('ended', () => {{
+                            URL.revokeObjectURL(audioUrl);
+                        }});
+                        document.body.appendChild(audio);
+                        audio.play(); // 播放音频
+                    }})
+                .catch(error => console.error('There was a problem with the fetch operation:', error));
             }});
-            """
-            random.uniform(1.5,3.5 )
-            try:
-                driver_handler.execute_script(request)
-                print("切换讲解卡脚本运行结束")
-            except Exception as e:
-                print(f"发生了一个非预期的异常: {e}")
+        """
+        try:
+            driver_speaker.execute_script(request)
+            print("播放语音脚本运行结束")
+        except Exception as e:
+            print(f"发生了一个非预期的异常: {e}")
+        time.sleep(3)
+        request = f"""
+                return new Promise((resolve, reject) => {{
+                    fetch('https://buyin.jinritemai.com/api/anchor/livepc/setcurrent?verifyFp=verify_m7q9579r_8gWGFJ0Q_bGZY_40ce_89y9_j24sL6TY5vxY&fp=verify_m7q9579r_8gWGFJ0Q_bGZY_40ce_89y9_j24sL6TY5vxY&msToken=hkcfl9bKA_bykhNFw2tR1yCANvPuw1XHQ4erPqJeN8-abNLXL_vvdJULE2bX1HrtTVKVEMxuX71Z0U_qXv2ylB1iELWJRBeY6f6yi6hDQGVWCY-ce8tJ6qYLsWecxl-rUXme2ZSJRl9Jhpkn9NNZK15mux517fZxAtWTR8zbym9C&a_bogus=m6s5h7XwQp8VepASmCppyArlA8DlrsWyEMTxSy1PSoKtG1FYn2pPDGhgJOLy49JRBWBrie-7MEuKbxdb%2FVp9hq9kFmhvSuiWT4IAV0mL8qqXGz48ErfwCwmNtJGbUcTEO5KbJI61AtmO2DOUEr3hUp5y9ATJsQipPrrbDBRGPoFv6F47MNqxuNtDiXFx-5I4kj%3D%3D', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }},
+                        body: 'promotion_id={data['goods'][good_index]['promotion_id']}&cancel=false',
+                        credentials: 'include', 
+                        }})
+                        .then(response => {{response.json();resolve('异步操作已完成');}})
+                        .then(data => console.log(data))
+                        .catch((error) => {{
+                            console.error('Error:', error);
+                        }});
+                }});
+        """
+        try:
+            driver_handler.execute_script(request)
+            print("切换讲解卡脚本运行结束")
+        except Exception as e:
+            print(f"发生了一个非预期的异常: {e}")
         good_index += 1
+        promotion_slogans_index += 1
+        if good_index >= len(data["goods"]):
+            good_index = 0
+        if promotion_slogans_index >= len(data['promotion_slogans']):
+            promotion_slogans_index = 0
+        time.sleep(13)
+
+
+def welcome_people(driver):
+    pass
+
+# 自动发送带节奏评论
+
+
+def auto_send_comment(driver):
+    global data, audo_send_index
+    now_time = int(time.time())
+    if now_time - data["auto_send_start_time"] > data["auto_send_frequency"]:
+        random.shuffle(data["chars"])
+        if data["auto_send_list_once"] == "True":
+            for i in data["auto_send_onece_list"]:
+                send_comment(driver, i + random.choice(data["chars"]))
+        elif data["auto_send_list_once"] == "False":
+            if audo_send_index >= len(data["auto_send_list"]):
+                audo_send_index = 0
+                random.shuffle(data["auto_send_list"])
+            send_comment(
+                driver,
+                data["auto_send_list"][audo_send_index] +
+                random.choice(data["chars"]),
+            )
+            audo_send_index += 1
+        data["auto_send_start_time"] = int(time.time())
 
 
 def type_character(element, text):
     element.send_keys(text)
+
+#  发送评论内容
+
+
+def send_comment(driver, comment):
+    request = f"""
+        return new Promise((resolve, reject) => {{
+            fetch('https://buyin.jinritemai.com/api/anchor/comment/operate?verifyFp=verify_m7rjs0c5_X4GLrMJp_cWHc_4WKB_BDfp_pRhJY2Z0Jaw4&fp=verify_m7rjs0c5_X4GLrMJp_cWHc_4WKB_BDfp_pRhJY2Z0Jaw4&msToken=Or-S8IPBio64jh45o-mh0yNFrWkDafQsnZBwdbrkkrrpn9gKwPuSBT6cka4Wy8mxrQs_-z-_YYuvOdxh_Ld3lljN166xM3HmNTBSbuNutFTVw0vBiQamT4AlxK8Hq27RngEcRJMC_ijzSkVvpfVWNj4i4_-OeeJpt2dviwGNKzf6DnMPTH7umqE%3D&a_bogus=EXUVkwSJOdWRFplt8KDPy6qlctfMNBWjGFi2WiHPSoO2T1zYldBpgSo1cKqG1P6RF8l-iH3Hi3POufdOKIsthzVkomhkSqh6zsAcV0vLMqNXaUk0grfhCukweJrTURTEO5oyJlX1AtQPIdQUDq3wUBl9SATE4mJpFqabDQRGxoFf6FG7PHF2uPGdThtbUG2X', {{
+                method: 'POST',
+                headers: {{
+                    'Content-Type': 'application/json',
+                }},
+                body: JSON.stringify({{
+                   "content": "{comment}",
+                   "operate_type": 2
+                }}),
+            }})
+            .then(response => {{
+                if (!response.ok) {{
+                    throw new Error('Network response was not ok');
+                }}
+                return response.json(); // 或者response.text()，根据实际情况
+            }})
+            .then(data => {{ resolve('异步操作已完成');}})
+            .catch(error => console.error('There was a problem with the fetch operation:', error));
+        }});
+    """
+    try:
+        driver.execute_script(request)
+        print("发布评论——脚本运行结束")
+    except Exception as e:
+        print(f"发布评论——发生了一个非预期的异常: {e}")
 
 
 def noiz_login():
@@ -124,7 +244,7 @@ def noiz_login():
     # service = Service(ChromeDriverManager().install())
     service = Service(executable_path=data["executable_path"])
     driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.set_window_size(1483, 1080)
+    driver.set_window_size(980, 680)
     driver.set_script_timeout(30)
     driver.get(data["ai_audio_url_login"])
     time.sleep(3)
@@ -159,7 +279,8 @@ def juliangbaiying_login():
     # service = Service(ChromeDriverManager().install())
     service = Service(executable_path=data["executable_path"])
     driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.set_window_size(1483, 1080)
+    driver.set_window_size(1110, 680)
+    driver.set_script_timeout(30)
     driver.get(data["url-juliangbaiying-login"])
     input("登陆成功后，点击回车键继续")
     driver.execute_script("window.open();")
@@ -181,8 +302,10 @@ def set_options(chrome_options):
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument(f"user-agent={s}")
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_argument(
+        "--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option(
+        "excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option("useAutomationExtension", False)
     chrome_options.add_argument("--disable-extensions")
     # 设置浏览器指纹
