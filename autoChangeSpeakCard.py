@@ -281,7 +281,7 @@ def juliangbaiying_login():
     # service = Service(ChromeDriverManager().install())
     service = Service(executable_path=data["executable_path"])
     driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.set_window_size(1110, 680)
+    driver.set_window_size(1200, 780)
     driver.set_script_timeout(30)
     driver.get(data["url-juliangbaiying-login"])
     input("登陆成功后，点击回车键继续")
