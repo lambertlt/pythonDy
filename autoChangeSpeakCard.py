@@ -168,7 +168,7 @@ def operating(driver_handler, driver_speaker):
         """
         try:
             audio = AudioSegment.from_file("./audio/ding.mp3")
-            audio = audio - 25
+            audio = audio - 35
             play(audio)
             driver_speaker.execute_script(request)
             wait_for_audio_completion(
