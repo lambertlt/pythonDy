@@ -38,7 +38,7 @@ with open("data.json", "r", encoding="utf-8") as file:
 
 def main_douyin():
     global data
-    delete_directory(data['videos_path'])
+    # delete_directory(data[''])
     driver_handler = juliangbaiying_login()
     driver_speaker = noiz_login()
     time.sleep(3)
