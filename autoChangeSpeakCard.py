@@ -174,6 +174,15 @@ def operating(driver_handler, driver_speaker):
             wait_for_audio_completion(
                 driver_speaker, "window.audioPlaybackCompleted;")
             print("播放讲解卡标题——脚本运行结束")
+            try:
+                good_video_duration = 0
+                video_path = f"{data['videos_path']}/{good_index}.mp4"
+                if os.path.exists(video_path):
+                    x = Thread(target=play_good_video, args=(video_path,))
+                    x.start()
+                print("播放视频——脚本运行结束")
+            except Exception as e:
+                print(f"播放视频——发生了一个非预期的异常: {e}")
         except Exception as e:
             print(f"播放讲解卡标题——发生了一个非预期的异常: {e}")
         # 切讲解卡
@@ -200,15 +209,7 @@ def operating(driver_handler, driver_speaker):
             print("第二次切换讲解卡——脚本运行结束")
         except Exception as e:
             print(f"第二次切换讲解卡——发生了一个非预期的异常: {e}")
-        try:
-            good_video_duration = 0
-            video_path = f"{data['videos_path']}/{good_index}.mp4"
-            if os.path.exists(video_path):
-                x = Thread(target=play_good_video, args=(video_path,))
-                x.start()
-            print("播放视频——脚本运行结束")
-        except Exception as e:
-            print(f"播放视频——发生了一个非预期的异常: {e}")
+
 
         good_index += 1
         promotion_slogans_index += 1
@@ -250,7 +251,7 @@ def play_good_video(video_url):
         is_good_video_play = True
 
     fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_interval_ms = int(1000 / fps)  # 计算每帧之间的间隔时间(ms)
+    frame_interval_ms = int(1000 / fps) 
     frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     with lock:
         good_video_duration = frame_count / fps
@@ -261,9 +262,15 @@ def play_good_video(video_url):
         ret, frame = cap.read()
         if not ret or is_good_video_play == False:
             break
+
+        height, width = frame.shape[:2]
+        new_width = 600
+        new_height = int(new_width * height / width)
+        resized_frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
+
         current_time = time.time() - start_time
         frame_number = int(current_time * fps)
-        cv2.imshow("Video", frame)
+        cv2.imshow("Video", resized_frame)
         if is_play_audio == False:
             audio_play_obj = sa.play_buffer(
                 raw_data,
@@ -272,12 +279,10 @@ def play_good_video(video_url):
                 sample_rate=audio.frame_rate
             )
             is_play_audio = True
-        # 控制帧率
         elapsed_time = (time.time() - start_time) * 1000
         sleep_time = max(frame_interval_ms - (elapsed_time %
                          frame_interval_ms), 1)
         time.sleep(sleep_time / 1000.0)
-        # 按'q'键退出
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
     # 释放资源
@@ -374,7 +379,7 @@ def noiz_login():
             By.XPATH,
             "/html/body/div/section/div[2]/div/form/div[4]/div/div/div/div/button",
         )
-        type_character(name, "lambert_Y_Y@163.com")
+        type_character(name, "lambert_work@163.com")
         type_character(password, "lanTIAN123")
         time.sleep(1)
         login.click()
