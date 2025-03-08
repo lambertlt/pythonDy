@@ -38,12 +38,17 @@ with open("data.json", "r", encoding="utf-8") as file:
 
 def main_douyin():
     global data
+    delete_directory(data['videos_path'])
     driver_handler = juliangbaiying_login()
     driver_speaker = noiz_login()
     time.sleep(3)
     operating(driver_handler, driver_speaker)
     driver_handler.quit()
     driver_speaker.quit()
+
+
+def delete_directory(path):
+    shutil.rmtree(path)
 
 
 # 操作
@@ -210,7 +215,6 @@ def operating(driver_handler, driver_speaker):
         except Exception as e:
             print(f"第二次切换讲解卡——发生了一个非预期的异常: {e}")
 
-
         good_index += 1
         promotion_slogans_index += 1
         if good_index >= len(data["goods"]):
@@ -251,7 +255,7 @@ def play_good_video(video_url):
         is_good_video_play = True
 
     fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_interval_ms = int(1000 / fps) 
+    frame_interval_ms = int(1000 / fps)
     frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     with lock:
         good_video_duration = frame_count / fps
@@ -266,7 +270,8 @@ def play_good_video(video_url):
         height, width = frame.shape[:2]
         new_width = 600
         new_height = int(new_width * height / width)
-        resized_frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
+        resized_frame = cv2.resize(
+            frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
         current_time = time.time() - start_time
         frame_number = int(current_time * fps)
@@ -432,7 +437,6 @@ def juliangbaiying_login():
                 # data["goods"][item]["video_url"] = src
                 download_file(video_src, data['videos_path']+str(item)+".mp4")
             driver.close()
-# shutil.rmtree(data['videos_path'])
     print("巨量应用 加载成功")
     return driver
 
@@ -455,8 +459,6 @@ def set_options(chrome_options, user_data_dir="", profile_directory=""):
     chrome_options.add_experimental_option("useAutomationExtension", False)
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-infobars")
-    # 无头模式
-    # chrome_options.add_argument("--headless")
     # chrome_options.add_argument("--remote-debugging-port=9222")
 
 
