@@ -455,6 +455,7 @@ def set_options(chrome_options, user_data_dir="", profile_directory=""):
     chrome_options.add_experimental_option("useAutomationExtension", False)
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-infobars")
+    # 无头模式
     # chrome_options.add_argument("--headless")
     # chrome_options.add_argument("--remote-debugging-port=9222")
 
