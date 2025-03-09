@@ -419,9 +419,13 @@ def juliangbaiying_login():
             id = data["goods"][item]["promotion_id"]
             url = f"https://buyin.jinritemai.com/dashboard/merch-picking-library/merch-promoting?id={id}"
             driver.switch_to.window(driver.window_handles[1])
+            time.sleep(0.2)
             driver.execute_script("window.open();")
+            time.sleep(0.2)
             driver.switch_to.window(driver.window_handles[-1])
+            time.sleep(0.2)
             driver.get(url)
+            time.sleep(1)
             try:
                 elements = WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located((By.TAG_NAME, "video"))
@@ -435,7 +439,7 @@ def juliangbaiying_login():
             if elements:
                 video_src = elements.get_attribute("src")
                 # data["goods"][item]["video_url"] = src
-                download_file(video_src, data['videos_path']+str(item)+".mp4")
+                download_file(video_src, data['videos_path']+"/"+str(item)+".mp4")
             driver.close()
     print("巨量应用 加载成功")
     return driver
