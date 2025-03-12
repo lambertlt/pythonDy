@@ -555,7 +555,7 @@ def juliangbaiying_login():
         finally:
             driver.close()
             driver.switch_to.window(driver.window_handles[1])
-    print("商品信息")
+    print("商品资料下载完成")
     print("巨量应用 加载成功")
     return driver
 
@@ -582,12 +582,6 @@ def set_options(chrome_options, user_data_dir="", profile_directory=""):
 
 
 def download_file(url, save_path):
-    """
-    下载文件并保存到指定路径。
-
-    :param url: 文件的URL地址
-    :param save_path: 文件保存的完整路径（包括文件名）
-    """
     # 确保保存目录存在，如果不存在则创建
     directory = os.path.dirname(save_path)
     if not os.path.exists(directory):
