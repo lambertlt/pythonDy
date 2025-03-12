@@ -201,6 +201,10 @@ def operating(driver_handler, driver_speaker):
                 if os.path.exists(video_path):
                     x = Thread(target=play_good_video, args=(video_path,))
                     x.start()
+                else:
+                    img_path = f"{data['videos_path']}/{now_good_id}/"
+                    x = Thread(target=play_good_img, args=(img_path,))
+                    x.start()
                 print("播放视频——脚本运行结束")
             except Exception as e:
                 print(f"播放视频——发生了一个非预期的异常: {e}")
@@ -517,7 +521,13 @@ def juliangbaiying_login():
     time.sleep(1)
     driver.switch_to.window(driver.window_handles[-1])
     driver.get(data["url-juliangbaiying-control"])
-    # 下载视频
+    download_goods_media(driver)
+    print("巨量应用 加载成功")
+    return driver
+
+
+def download_goods_media(driver):
+    global data
     for item in range(len(data["goods"])):
         id = data["goods"][item]["promotion_id"]
         dir_path = Path(f"{data['videos_path']}/{id}")
@@ -556,9 +566,6 @@ def juliangbaiying_login():
             driver.close()
             driver.switch_to.window(driver.window_handles[1])
     print("商品资料下载完成")
-    print("巨量应用 加载成功")
-    return driver
-
 
 # 配置浏览器
 
