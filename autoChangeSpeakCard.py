@@ -56,13 +56,15 @@ def operating(driver_handler, driver_speaker):
     global data, t, good_video_duration, is_good_video_play
     good_index = 0
     promotion_slogans_index = 0
+    sentence = ''
+    sale = ''
     data['auto_send_start_time'] = int(time.time())
+    driver_speaker.execute_script(f"let nowGoodId = 0")
 
     while True:
         auto_send_comment(driver_handler)
+        now_good_id = data['goods'][good_index]['promotion_id']
         random_float = random.uniform(0, 1)
-        sentence = ''
-        sale = ''
         if random_float > 0.5:
             sentence = data['promotion_slogans'][promotion_slogans_index]
         if random_float > 0.7:
@@ -70,10 +72,11 @@ def operating(driver_handler, driver_speaker):
         if random_float > 0.3:
             random.shuffle(data['live_interval_audio_list'])
             request = f"""
+                nowGoodId ={ now_good_id }
                 window.audioPlaybackCompleted = false;
                 const formData = new FormData();
                 formData.append('text', '{random.choice(data['live_interval_audio_list'])}');
-                formData.append('voice_id', '1c2c0a287');
+                formData.append('voice_id', '{random.choice(data['voice_id'])}');
                 formData.append('quality_preset', '0');
                 formData.append('output_format', 'wav');
                 formData.append('target_lang', '');
@@ -84,23 +87,28 @@ def operating(driver_handler, driver_speaker):
                     body: formData,
                 }})
                 .then(response => {{
+                    let goodId = {now_good_id}
                     if (!response.ok) {{
                         throw new Error('Network response was not ok');
                     }}
-                    if (response.headers.get('content-type') === 'audio/wav') {{
+                    if (response.headers.get('content-type') === 'audio/wav' && goodId==nowGoodId) {{
                         return response.blob();
                     }}
                     return response.json(); // 或者response.text()，根据实际情况
                 }})
                 .then(blob => {{
-                    const audioUrl = URL.createObjectURL(blob);
-                    const audio = new Audio(audioUrl);
+                    let goodId = {now_good_id}
+                    if(goodId==nowGoodId){{
+                        const audioUrl = URL.createObjectURL(blob);
+                        const audio = new Audio(audioUrl);
 
-                    audio.addEventListener('ended', () => {{
-                        URL.revokeObjectURL(audioUrl);
-                        window.audioPlaybackCompleted = true;
-                    }});
-                    audio.play()
+                        audio.addEventListener('ended', () => {{
+                            URL.revokeObjectURL(audioUrl);
+                            window.audioPlaybackCompleted = true;
+                        }});
+                        audio.play()
+                    }}
+                    
                 }})
                 .catch(error => {{
                     console.error('There was a problem with the fetch operation:', error);
@@ -139,10 +147,11 @@ def operating(driver_handler, driver_speaker):
         except Exception as e:
             print(f"第一次切换讲解卡——发生了一个非预期的异常: {e}")
         request = f"""
+            nowGoodId ={ now_good_id }
             window.audioPlaybackCompleted = false;
             const formData = new FormData();
             formData.append('text','{random.choice(["接下来这款","下一款"])}{sale}发卡：{data['goods'][good_index]['title']},现在活动价,仅需{data['goods'][good_index]['price_desc']['min_price']['integer']}.{data['goods'][good_index]['price_desc']['min_price']['decimal']}元，在小黄车{good_index+1}号链接 {random.choice(["赶快冲它","大家可以点开看看","真的很合适",""])}！{sentence}') 
-            formData.append('voice_id','1c2c0a287')
+            formData.append('voice_id','{random.choice(data['voice_id'])}')
             formData.append('quality_preset','0')
             formData.append('output_format','wav')
             formData.append('target_lang','')
@@ -152,22 +161,26 @@ def operating(driver_handler, driver_speaker):
                 body: formData, // 直接将FormData对象作为请求体
             }})
             .then(response => {{
+                let goodId = {now_good_id}
                 if (!response.ok) {{
                     throw new Error('Network response was not ok');
                 }}
-                if (response.headers.get('content-type') === 'audio/wav') {{
+                if (response.headers.get('content-type') === 'audio/wav' && goodId==nowGoodId) {{
                     return response.blob(); // 将响应体转换为 Blob
                 }}
                 return response.json(); // 或者response.text()，根据实际情况
             }})
             .then(blob => {{
-                    const audioUrl = URL.createObjectURL(blob); // 创建一个对象URL
-                    const audio = new Audio(audioUrl); // 创建一个Audio对象
-                    audio.addEventListener('ended', () => {{
-                        URL.revokeObjectURL(audioUrl);
-                        window.audioPlaybackCompleted = false;
-                    }});
-                    audio.play(); // 播放音频
+                    let goodId = {now_good_id}
+                    if(goodId==nowGoodId){{
+                        const audioUrl = URL.createObjectURL(blob); // 创建一个对象URL
+                        const audio = new Audio(audioUrl); // 创建一个Audio对象
+                        audio.addEventListener('ended', () => {{
+                            URL.revokeObjectURL(audioUrl);
+                            window.audioPlaybackCompleted = true;
+                        }});
+                        audio.play(); // 播放音频
+                    }}
                 }})
             .catch(error => console.error('There was a problem with the fetch operation:', error));
         """
@@ -405,7 +418,7 @@ def juliangbaiying_login():
     driver.set_window_size(1200, 780)
     driver.set_script_timeout(30)
     driver.get(data["url-juliangbaiying-login"])
-    WebDriverWait(driver, 60).until(
+    WebDriverWait(driver, 300).until(
         EC.presence_of_element_located(
             (By.CLASS_NAME, "index_module__title___b535e"))
     )
