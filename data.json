@@ -13,7 +13,7 @@
   "type_character_feign": "False",
   "type_character_feign_time_start": 0.1,
   "type_character_feign_time_end": 0.15,
-  "voice_id": ["142476549", "1c2c0a287", "1db69c0a1", "7a1fb158", "08987375"],
+  "voice_id": ["1c2c0a287", "183203aa0", "162d64169", "1db69c0a1"],
   "live_url": "https://live.douyin.com/540517338200",
   "cookiePklPath": "./douyin_cookies.pkl",
   "videos_path": "./videos",
