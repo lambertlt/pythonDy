@@ -6,6 +6,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from fake_useragent import UserAgent
 from selenium.webdriver.common.action_chains import ActionChains
 from requests.exceptions import Timeout, RequestException
+from pydub.playback import _play_with_simpleaudio
 from pydub import AudioSegment
 from pydub.playback import play
 from threading import Thread, Lock
@@ -37,12 +38,12 @@ class PlayAudio:
         self.volume = None
         print("PlayAudio")
 
-    def mp3_play_async(self, audio_path, volume):
+    def mp3_play_async(self, audio_path, volume=-30):
         x = Thread(target=self.mp3_play, args=(audio_path, volume,))
         x.start()
         return x
 
-    def mp3_play(self, audio_path, volume):
+    def mp3_play(self, audio_path, volume=-30):
         self.volume = volume
         self.audio_path = audio_path
         audio = AudioSegment.from_file("./audio/ding.mp3")
@@ -133,13 +134,71 @@ class PlayVideo:
         self.window_name = None
         print('PlayVideo')
 
-    def play_async(self, video_path, bg_color=[0, 255, 0], width=400, window_name="python.exe"):
+    def play_async(self, video_path, bg_color=[0, 255, 0], width=400, volume=-15, window_name="python.exe"):
         x = Thread(target=self.play, args=(
+            video_path, bg_color, width, volume, window_name,))
+        x.start()
+        return x
+
+    def play(self, video_path, bg_color=[0, 255, 0], width=400, volume=-15, window_name="Video Player"):
+        # 提取并播放音频
+        audio = AudioSegment.from_file(video_path)
+        audio = audio + volume
+        audio_thread = Thread(target=_play_with_simpleaudio, args=(audio,))
+        audio_thread.start()
+
+        self.window_name = window_name
+        self.bg_color = bg_color
+        fixed_width = width
+        target_ratio = 9 / 16
+
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            h, w, _ = frame.shape
+            original_ratio = w / h
+
+            if original_ratio > target_ratio:
+                new_width = fixed_width
+                new_height = int(fixed_width / original_ratio)
+            else:
+                new_width = int(fixed_width * original_ratio / target_ratio)
+                new_height = int(fixed_width / target_ratio)
+
+            frame_resized = cv2.resize(
+                frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
+
+            background_frame = np.zeros(
+                (int(fixed_width / target_ratio), fixed_width, 3), dtype=np.uint8)
+            background_frame[:] = self.bg_color
+
+            y_offset = (background_frame.shape[0] - new_height) // 2
+            x_offset = (background_frame.shape[1] - new_width) // 2
+
+            background_frame[y_offset:y_offset + new_height,
+                             x_offset:x_offset + new_width] = frame_resized
+
+            cv2.imshow(self.window_name, background_frame)
+
+            if cv2.waitKey(int(1000/fps)) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+        audio_thread.join()  # 等待音频播放完成
+
+    def play_mute_async(self, video_path, bg_color=[0, 255, 0], width=400, window_name="python.exe"):
+        x = Thread(target=self.play_mute, args=(
             video_path, bg_color, width, window_name,))
         x.start()
         return x
 
-    def play(self, video_path, bg_color=[0, 255, 0], width=400, window_name="python.exe"):
+    def play_mute(self, video_path, bg_color=[0, 255, 0], width=400, window_name="python.exe"):
         self.window_name = window_name
         self.bg_color = bg_color
         # 固定宽度和目标宽高比
@@ -410,15 +469,14 @@ class AISpeaker:
         """
         try:
             self.driver.execute_script(request)
-            print("播放讲解卡标题——脚本运行结束")
+            print("ai语音——脚本运行结束")
         except Exception as e:
-            print(f"播放讲解卡标题——发生了一个非预期的异常: {e}")
+            print(f"ai语音——发生了一个非预期的异常: {e}")
         return self.driver
 
-    def speak_good_card(self, now_good_id, text, voice_id,):
+    def speak_text_wait(self, text, voice_id):
         request = f"""
-            nowGoodId ={ now_good_id }
-            window.audioPlaybackCompleted = false;
+            window.isPlayEnd = false;
             const formData = new FormData();
             formData.append('text','{text}') 
             formData.append('voice_id','{voice_id}')
@@ -431,36 +489,32 @@ class AISpeaker:
                 body: formData, // 直接将FormData对象作为请求体
             }})
             .then(response => {{
-                let goodId = {now_good_id}
                 if (!response.ok) {{
                     throw new Error('Network response was not ok');
                 }}
-                if (response.headers.get('content-type') === 'audio/wav' && goodId==nowGoodId) {{
+                if (response.headers.get('content-type') === 'audio/wav') {{
                     return response.blob(); // 将响应体转换为 Blob
                 }}
                 return response.json(); // 或者response.text()，根据实际情况
             }})
             .then(blob => {{
-                    let goodId = {now_good_id}
-                    if(goodId==nowGoodId){{
-                        const audioUrl = URL.createObjectURL(blob); // 创建一个对象URL
-                        const audio = new Audio(audioUrl); // 创建一个Audio对象
-                        audio.addEventListener('ended', () => {{
-                            URL.revokeObjectURL(audioUrl);
-                            window.audioPlaybackCompleted = true;
-                        }});
-                        audio.play(); // 播放音频
-                    }}
+                    const audioUrl = URL.createObjectURL(blob); // 创建一个对象URL
+                    const audio = new Audio(audioUrl); // 创建一个Audio对象
+                    audio.addEventListener('ended', () => {{
+                        URL.revokeObjectURL(audioUrl);
+                        window.isPlayEnd = true;
+                    }});
+                    audio.play(); // 播放音频
                 }})
             .catch(error => console.error('There was a problem with the fetch operation:', error));
         """
         try:
             self.driver.execute_script(request)
             wait_for_audio_completion(
-                self.driver, "window.audioPlaybackCompleted;")
-            print("播放讲解卡标题——脚本运行结束")
+                self.driver, "window.isPlayEnd;")
+            print("ai语音——脚本运行结束")
         except Exception as e:
-            print(f"播放讲解卡标题——发生了一个非预期的异常: {e}")
+            print(f"ai语音——发生了一个非预期的异常: {e}")
         return self.driver
 
     def login(self):
@@ -539,7 +593,7 @@ def wait_for_audio_completion(driver, params, timeout=30):
         timeout -= 1
         print(f"等待音频播放-{timeout}")
     driver.execute_script(
-        "window.audioPlaybackCompleted=false;window.speakCardCompleted = false;")
+        "window.isPlayEnd=false;")
 
 
 def set_options(self):
