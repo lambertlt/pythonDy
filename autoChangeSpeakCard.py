@@ -24,7 +24,11 @@ import random
 import requests
 import json
 import shutil
-
+# a.map(e=>{return{
+#     'title':e.title,
+#     'promotion_id':e.promotion_id,
+#     'elastic_title':e.elastic_title
+# }})
 lock = Lock()
 # flag
 t = 0.5
@@ -72,7 +76,7 @@ def operating(driver_handler, driver_speaker):
             sentence = data['promotion_slogans'][promotion_slogans_index]
         if random_float > 0.7:
             sale = random.choice(["是一个爆款", "是一个热销款"])
-        if random_float > 0.3:
+        if random_float > 0.8:
             random.shuffle(data['live_interval_audio_list'])
             request = f"""
                 nowGoodId ={ now_good_id }
@@ -127,33 +131,10 @@ def operating(driver_handler, driver_speaker):
                 print(f"播放场控语音——发生了一个非预期的异常: {e}")
 
         request = f"""
-            window.speakCardCompleted = false;
-            fetch('https://buyin.jinritemai.com/api/anchor/livepc/setcurrent?verifyFp=verify_m7q9579r_8gWGFJ0Q_bGZY_40ce_89y9_j24sL6TY5vxY&fp=verify_m7q9579r_8gWGFJ0Q_bGZY_40ce_89y9_j24sL6TY5vxY&msToken=hkcfl9bKA_bykhNFw2tR1yCANvPuw1XHQ4erPqJeN8-abNLXL_vvdJULE2bX1HrtTVKVEMxuX71Z0U_qXv2ylB1iELWJRBeY6f6yi6hDQGVWCY-ce8tJ6qYLsWecxl-rUXme2ZSJRl9Jhpkn9NNZK15mux517fZxAtWTR8zbym9C&a_bogus=m6s5h7XwQp8VepASmCppyArlA8DlrsWyEMTxSy1PSoKtG1FYn2pPDGhgJOLy49JRBWBrie-7MEuKbxdb%2FVp9hq9kFmhvSuiWT4IAV0mL8qqXGz48ErfwCwmNtJGbUcTEO5KbJI61AtmO2DOUEr3hUp5y9ATJsQipPrrbDBRGPoFv6F47MNqxuNtDiXFx-5I4kj%3D%3D', {{
-                method: 'POST',
-                headers: {{
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }},
-                body: 'promotion_id={data['goods'][good_index]['promotion_id']}&cancel=false',
-                credentials: 'include', 
-                }})
-                .then(response => {{response.json();window.speakCardCompleted = true;}})
-                .then(data => console.log(data))
-                .catch((error) => {{
-                    console.error('Error:', error);
-                }});
-        """
-        try:
-            driver_handler.execute_script(request)
-            wait_for_audio_completion(
-                driver_handler, "window.speakCardCompleted;")
-            print("第一次切换讲解卡——脚本运行结束")
-        except Exception as e:
-            print(f"第一次切换讲解卡——发生了一个非预期的异常: {e}")
-        request = f"""
             nowGoodId ={ now_good_id }
             window.audioPlaybackCompleted = false;
             const formData = new FormData();
-            formData.append('text','{random.choice(["接下来这款","下一款"])}{sale}发卡：{data['goods'][good_index]['title']},现在活动价,仅需{data['goods'][good_index]['price_desc']['min_price']['integer']}.{data['goods'][good_index]['price_desc']['min_price']['decimal']}元，在小黄车{good_index+1}号链接 {random.choice(["赶快冲它","大家可以点开看看","真的很合适",""])}！{sentence}') 
+            formData.append('text','{random.choice(["接下来这款","下一款"])}{sale}发卡：{data['goods'][good_index]['elastic_title']},现在活动价,仅需{data['goods'][good_index]['price_desc']['min_price']['integer']}.{data['goods'][good_index]['price_desc']['min_price']['decimal']}元，在小黄车{good_index+1}号链接 {random.choice(["赶快冲它","大家可以点开看看","真的很合适",""])}！{sentence}') 
             formData.append('voice_id','{random.choice(data['voice_id'])}')
             formData.append('quality_preset','0')
             formData.append('output_format','wav')
@@ -231,9 +212,9 @@ def operating(driver_handler, driver_speaker):
             driver_handler.execute_script(request)
             wait_for_audio_completion(
                 driver_handler, "window.speakCardCompleted;")
-            print("第二次切换讲解卡——脚本运行结束")
+            print("切换讲解卡——脚本运行结束")
         except Exception as e:
-            print(f"第二次切换讲解卡——发生了一个非预期的异常: {e}")
+            print(f"切换讲解卡——发生了一个非预期的异常: {e}")
 
         good_index += 1
         promotion_slogans_index += 1
