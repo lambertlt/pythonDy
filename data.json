@@ -12,8 +12,8 @@
     "hello_new_person_start_time": 0,
     "type_character_feign": "False",
     "type_character_feign_time_start": 0.1,
-    "AI_name": "lambert_work@163.com",
-    "AI_password": "lanTIAN123",
+    "AI_name": "",
+    "AI_password": "",
     "type_character_feign_time_end": 0.15,
     "voice_id": [
         "1c2c0a287",
