@@ -9,9 +9,8 @@ def handler():
     # JuLiangBaiYing().loop_speak_card_handler(data['goods'], 5)
     isContinue = False
     goods = data['goods']
-    ai_driver = AISpeaker()
-    ju_driver = JuLiangBaiYing()
-    ju_driver.download_goods_media()
+    ai_driver = AISpeaker().login()
+    ju_driver = JuLiangBaiYing().login(True).download_goods_media()
     loop_speak_card_index = 0
     promotion_slogans_index = 0
     wait_time = 0
@@ -38,9 +37,8 @@ def handler():
                     random.shuffle(data['live_interval_audio_list'])
                     ai_driver.speak_text_wait(
                         f"{random.choice(data['live_interval_audio_list'])}", f"{random.choice(data['voice_id'])}")
-                ju_driver.switch_card_async(promotion_id)
                 ai_driver.speak_text_wait(
-                    f"{next} {sale}发卡：{goods[loop_speak_card_index]['elastic_title']},现在活动价,仅需{goods[loop_speak_card_index]['price_desc']['min_price']['integer']}.{goods[loop_speak_card_index]['price_desc']['min_price']['decimal']}元，在小黄车{loop_speak_card_index+1}号链接 {hot}！{sentence}", f"{random.choice(data['voice_id'])}")
+                    f"{next} {sale}发卡：{goods[loop_speak_card_index]['elastic_title']}，在小黄车{loop_speak_card_index+1}号链接 {hot}！{sentence}", f"{random.choice(data['voice_id'])}")
                 ju_driver.switch_card_async(promotion_id)
                 video_path = f"./{data['videos_path']}/{promotion_id}/{promotion_id}.mp4"
                 img_path = f"./{data['videos_path']}/{promotion_id}/"

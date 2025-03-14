@@ -1,3 +1,4 @@
+from seleniumwire import webdriver as webdriver_wire
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -15,8 +16,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from pathlib import Path
 from glob import glob
 import cv2
+import importlib
 import numpy as np
 import simpleaudio as sa
+import brotli
 import os
 import time
 import re
@@ -40,6 +43,7 @@ class PlayAudio:
 
     def mp3_play_async(self, audio_path, volume=-30):
         x = Thread(target=self.mp3_play, args=(audio_path, volume,))
+        x.daemon = True
         x.start()
         return x
 
@@ -62,6 +66,7 @@ class PlayImg:
     def play_async(self, folder_path, wait_time=3000, bg_color=[0, 255, 0], width=400, window_name="python.exe"):
         x = Thread(target=self.play, args=(
             folder_path, wait_time, bg_color, width, window_name,))
+        x.daemon = True
         x.start()
         return x
 
@@ -137,6 +142,7 @@ class PlayVideo:
     def play_async(self, video_path, bg_color=[0, 255, 0], width=400, volume=-15, window_name="python.exe"):
         x = Thread(target=self.play, args=(
             video_path, bg_color, width, volume, window_name,))
+        x.daemon = True
         x.start()
         return x
 
@@ -145,6 +151,7 @@ class PlayVideo:
         audio = AudioSegment.from_file(video_path)
         audio = audio + volume
         audio_thread = Thread(target=_play_with_simpleaudio, args=(audio,))
+        audio_thread.daemon = True
         audio_thread.start()
 
         self.window_name = window_name
@@ -263,22 +270,31 @@ class PlayVideo:
 
 class JuLiangBaiYing:
     def __init__(self):
+        global data
+        self.data = data
         print('JuLiangBaiYing')
-        self.is_loop_speak_card = False
+        self.is_crawling = None
+        self.driver = None
         self.loop_speak_card_index = 0
-        self.user_data_dir = data['user_data_dir']
-        self.profile_directory = data['profile_directory']
-        self.ua_user = data["ua_user"]
-        self.driver = self.login()
+        self.user_data_dir = self.data['user_data_dir']
+        self.profile_directory = self.data['profile_directory']
+        self.ua_user = self.data["ua_user"]
+        self.goods_url = "https://buyin.jinritemai.com/api/anchor/livepc/promotions_v2"
 
-    def login(self):
+    def login(self, is_crawling=False):
+        self.is_crawling = is_crawling
         self.chrome_options = Options()
         set_options(self)
-        service = Service(executable_path=data["executable_path"])
-        driver = webdriver.Chrome(service=service, options=self.chrome_options)
+        service = Service(executable_path=self.data["executable_path"])
+        if self.is_crawling:
+            driver = webdriver_wire.Chrome(
+                service=service, options=self.chrome_options)
+        else:
+            driver = webdriver.Chrome(
+                service=service, options=self.chrome_options)
         driver.set_window_size(1200, 780)
         driver.set_script_timeout(30)
-        driver.get(data["url-juliangbaiying-login"])
+        driver.get(self.data["url-juliangbaiying-login"])
         WebDriverWait(driver, 300).until(
             EC.presence_of_element_located(
                 (By.CLASS_NAME, "index_module__title___b535e"))
@@ -286,14 +302,42 @@ class JuLiangBaiYing:
         driver.execute_script("window.open();")
         time.sleep(1)
         driver.switch_to.window(driver.window_handles[-1])
-        driver.get(data["url-juliangbaiying-control"])
+        driver.get(self.data["url-juliangbaiying-control"])
+        if self.is_crawling:
+            try:
+                is_success = False
+                while True:
+                    for request in driver.requests:
+                        if self.goods_url in request.url:
+                            if request.response.headers.get('Content-Encoding') == 'br':
+                                good = un_brotli(request.response.body)[
+                                    'data']['promotions']
+                                self.data['goods'] = good
+                                print(
+                                    f"抓取商品请求成功")
+                                with open("data.json", "w", encoding="utf-8") as file:
+                                    json.dump(self.data, file,
+                                              ensure_ascii=False, indent=4)
+                                is_success = True
+                                break
+                    if is_success:
+                        break
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                print("停止监听请求")
         print("巨量应用 加载成功")
-        return driver
+        self.driver = driver
+        return self
+
+    def close(self):
+        self.driver.quit()
+        return self
+
 
     def download_goods_media(self):
-        for item in range(len(data["goods"])):
-            id = data["goods"][item]["promotion_id"]
-            dir_path = Path(f"{data['videos_path']}/{id}")
+        for item in range(len(self.data["goods"])):
+            id = self.data["goods"][item]["promotion_id"]
+            dir_path = Path(f"{self.data['videos_path']}/{id}")
             if dir_path.exists() and dir_path.is_dir():
                 continue
             url = f"https://buyin.jinritemai.com/dashboard/merch-picking-library/merch-promoting?id={id}"
@@ -314,7 +358,7 @@ class JuLiangBaiYing:
                 if elements:
                     video_src = elements.get_attribute("src")
                     DownloadFile.start(
-                        video_src, data['videos_path']+f"/{id}/{id}.mp4")
+                        video_src, self.data['videos_path']+f"/{id}/{id}.mp4")
             except Exception:
                 # 下载图片
                 elements = WebDriverWait(self.driver, 5).until(
@@ -324,12 +368,13 @@ class JuLiangBaiYing:
                 for item1 in range(len(elements)):
                     img_src = elements[item1].get_attribute("src")
                     DownloadFile.start(
-                        img_src, data['videos_path']+f"/{id}/{item1}.jpg")
+                        img_src, self.data['videos_path']+f"/{id}/{item1}.jpg")
             finally:
                 self.driver.close()
                 self.driver.switch_to.window(self.driver.window_handles[1])
         print("商品资料下载完成")
-        return self.driver
+        return self
+
 
     def send_comment(self, comment):
         request = f"""
@@ -359,7 +404,8 @@ class JuLiangBaiYing:
             print("发布评论——脚本运行结束")
         except Exception as e:
             print(f"发布评论——发生了一个非预期的异常: {e}")
-        return self.driver
+        return self
+
 
     def switch_card(self, promotion_id):
         request = f"""
@@ -382,18 +428,20 @@ class JuLiangBaiYing:
             print(f"切换讲解卡: {promotion_id} ——脚本运行结束")
         except Exception as e:
             print(f"切换讲解卡: {promotion_id} ——发生了一个非预期的异常: {e}")
-        return self.driver
+        return self
 
     def switch_card_async(self, promotion_id):
         x = Thread(target=self.switch_card, args=(promotion_id,))
+        x.daemon = True
         x.start()
-        return x
+        return self
 
     def loop_speak_card_handler_async(self, goods, wait_time=5):
         x = Thread(target=self.loop_speak_card_handler,
                    args=(goods, wait_time,))
+        x.daemon = True
         x.start()
-        return x
+        return self
 
     def loop_speak_card_handler(self, goods, wait_time=5):
         self.loop_speak_card_index = 0
@@ -407,33 +455,42 @@ class JuLiangBaiYing:
                 if self.loop_speak_card_index >= length:
                     self.loop_speak_card_index = 0
                 time.sleep(wait_time+random.uniform(0, 0.5))
-        return self.driver
+        return self
 
     def loop_speak_card_handler_pause(self):
         self.is_loop_speak_card == False
-        return self.driver
+        return self
 
     def loop_speak_card_handler_start(self):
         self.is_loop_speak_card == True
-        return self.driver
+        return self
 
 
 class AISpeaker:
     def __init__(self):
+        global data
         print('noiz_login')
+        self.data = data
+        self.is_crawling = None
+        self.driver = None
         self.user_data_dir = ""
         self.profile_directory = ""
-        # self.user_data_dir = data['user_data_dir']
-        # self.profile_directory = data['profile_directory']
-        self.ua_user = data["ua_user"]
-        self.name = data['AI_name']
-        self.password = data['AI_password']
+        # self.user_data_dir = self.data['user_data_dir']
+        # self.profile_directory = self.data['profile_directory']
+        self.ua_user = self.data["ua_user"]
+        self.name = self.data['AI_name']
+        self.password = self.data['AI_password']
         self.driver = self.login()
 
     def speak_text_async(self, text, voice_id):
         x = Thread(target=self.speak_text, args=(text, voice_id,))
+        x.daemon = True
         x.start()
-        return x
+        return self
+
+    def close(self):
+        self.driver.quit()
+        return self
 
     def speak_text(self, text, voice_id):
         request = f"""
@@ -472,7 +529,7 @@ class AISpeaker:
             print("ai语音——脚本运行结束")
         except Exception as e:
             print(f"ai语音——发生了一个非预期的异常: {e}")
-        return self.driver
+        return self
 
     def speak_text_wait(self, text, voice_id):
         request = f"""
@@ -515,17 +572,23 @@ class AISpeaker:
             print("ai语音——脚本运行结束")
         except Exception as e:
             print(f"ai语音——发生了一个非预期的异常: {e}")
-        return self.driver
+        return self
 
-    def login(self):
+    def login(self, is_crawling=False):
+        self.is_crawling = is_crawling
         self.chrome_options = Options()
         set_options(self)
-        service = Service(executable_path=data["executable_path"])
-        driver = webdriver.Chrome(service=service, options=self.chrome_options)
+        service = Service(executable_path=self.data["executable_path"])
+        if self.is_crawling:
+            driver = webdriver_wire.Chrome(
+                service=service, options=self.chrome_options)
+        else:
+            driver = webdriver.Chrome(
+                service=service, options=self.chrome_options)
         driver.set_window_size(980, 680)
         driver.set_script_timeout(30)
         time.sleep(1)
-        driver.get(data["ai_audio_url_login"])
+        driver.get(self.data["ai_audio_url_login"])
         time.sleep(3)
         try:
             name = driver.find_element(
@@ -545,9 +608,10 @@ class AISpeaker:
             time.sleep(1)
             login.click()
             print("AI spearker 加载成功")
+            self.driver = driver
         except Exception as e:
             print(f"登陆失败，发生了一个非预期的异常: {e}")
-        return driver
+        return self
 
 
 class DownloadFile:
@@ -581,7 +645,7 @@ def type_character(element, text):
     element.send_keys(text)
 
 
-def wait_for_audio_completion(driver, params, timeout=30):
+def wait_for_audio_completion(driver, params, timeout=25):
     while (True):
         completed = driver.execute_script(
             f"return {params}")
@@ -591,7 +655,7 @@ def wait_for_audio_completion(driver, params, timeout=30):
         # print("音频仍在播放...")
         time.sleep(1)
         timeout -= 1
-        print(f"等待音频播放-{timeout}")
+        # print(f"等待音频播放-{timeout}")
     driver.execute_script(
         "window.isPlayEnd=false;")
 
@@ -611,3 +675,22 @@ def set_options(self):
         "useAutomationExtension", False)
     self.chrome_options.add_argument("--disable-extensions")
     self.chrome_options.add_argument("--disable-infobars")
+
+
+def un_brotli(compressed_data):
+    try:
+        # 解压Brotli压缩的数据
+        decompressed_data = brotli.decompress(compressed_data)
+        # 将解压后的字节转换为字符串，假设原始数据是UTF-8编码的文本
+        str_data = decompressed_data.decode('utf-8')
+        print("Decompressed string:", str_data)
+
+        # 如果预期结果是JSON格式，可以进一步解析
+        json_data = json.loads(str_data)
+        return json_data
+    except brotli.error as e:
+        print(f"Failed to decompress Brotli data: {e}")
+    except UnicodeDecodeError:
+        print("Decompressed data is not valid UTF-8 encoded text.")
+    except json.JSONDecodeError:
+        print("Decompressed data is not valid JSON format.")
